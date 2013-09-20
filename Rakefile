@@ -20,6 +20,7 @@ task :c_generation do
     PRIMARY,
     FUNCS.call('Sum', 'Add'),
     FUNCS.call(nil, 'Subtract'),
+    FUNCS.call('Multiply', 'Multiply'),
     NEGATE,
     INITIALIZER
   ].join("\n\n")

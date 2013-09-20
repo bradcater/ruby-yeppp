@@ -10,6 +10,43 @@
 // Defining a space for information and references about the module to be stored internally
 VALUE cRyeppp;
 
+// Sum an Array.
+static VALUE sum_v64f_s64f(VALUE self, VALUE x) {
+  enum YepStatus status;
+  long i;
+  VALUE *x_a = RARRAY_PTR(x);
+  long l = RARRAY_LEN(x);
+	Yep64f *yep_x = (Yep64f*)calloc(l, sizeof(Yep64f));
+  Yep64f sum;
+
+	/* Allocate arrays of inputs and outputs */
+	assert(yep_x != NULL);
+
+	/* Initialize the Yeppp! library */
+	status = yepLibrary_Init();
+	assert(status == YepStatusOk);
+
+  /* Load x_a into yep_x. */
+  for (i=0; i<l; i++) {
+    if (TYPE(x_a[i]) != T_FIXNUM) {
+      rb_raise(rb_eTypeError, "input was not all integers");
+    }
+    yep_x[i] = (Yep64f)NUM2DBL(x_a[i]);
+  }
+
+  /* Perform the addition */
+  status = yepCore_Sum_V64f_S64f(yep_x, &sum, (YepSize)l);
+	assert(status == YepStatusOk);
+
+	/* Deinitialize the Yeppp! library */
+	status = yepLibrary_Release();
+	assert(status == YepStatusOk);
+
+	/* Release the memory allocated for arrays */
+	free(yep_x);
+  return DBL2NUM((double)sum);
+}
+
 // Add Arrays of Fixnums.
 static VALUE add_v64sv64s_v64s(VALUE self, VALUE x, VALUE y) {
   enum YepStatus status;
@@ -111,6 +148,7 @@ static VALUE add_v64fv64f_v64f(VALUE self, VALUE x, VALUE y) {
 // The initialization method for this module
 void Init_ryeppp() {
   cRyeppp = rb_define_class("Ryeppp", rb_cObject);
+  rb_define_singleton_method(cRyeppp, "sum_v64f_s64f", sum_v64f_s64f, 1);
   rb_define_singleton_method(cRyeppp, "add_v64sv64s_v64s", add_v64sv64s_v64s, 2);
   rb_define_singleton_method(cRyeppp, "add_v64fv64f_v64f", add_v64fv64f_v64f, 2);
 }

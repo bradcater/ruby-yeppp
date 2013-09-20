@@ -11,4 +11,21 @@ RSpec::Core::RakeTask.new(:spec) do |t|
   t.verbose = true
 end
 
-task :default => [:compile, :spec]
+desc "Ryeppp c generation"
+task :c_generation do
+  current_dir = __FILE__.split(/\//)[0..-2].join('/')
+  require File.join(current_dir, 'ext/templates/ryeppp.c.rb')
+  c_code = [
+    HEADERS,
+    PRIMARY,
+    FUNCS.call('Sum', 'Add'),
+    FUNCS.call(nil, 'Subtract'),
+    NEGATE,
+    INITIALIZER
+  ].join("\n\n")
+  File.open(File.join(current_dir, 'ext/ryeppp/ryeppp.c'), 'w') do |f|
+    f.write(c_code)
+  end
+end
+
+task :default => [:c_generation, :compile, :spec]

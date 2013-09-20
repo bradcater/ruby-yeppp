@@ -33,7 +33,13 @@ static VALUE add_v64sv64s_v64s(VALUE self, VALUE x, VALUE y) {
 
   /* Load x_a and y_a into yep_x and yep_y. */
   for (i=0; i<l; i++) {
+    if (TYPE(x_a[i]) != T_FIXNUM) {
+      rb_raise(rb_eTypeError, "input was not all integers");
+    }
     yep_x[i] = (Yep64s)NUM2INT(x_a[i]);
+    if (TYPE(y_a[i]) != T_FIXNUM) {
+      rb_raise(rb_eTypeError, "input was not all integers");
+    }
     yep_y[i] = (Yep64s)NUM2INT(y_a[i]);
   }
 

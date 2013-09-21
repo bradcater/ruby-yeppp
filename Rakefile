@@ -18,13 +18,14 @@ task :c_generation do
   c_code = [
     HEADERS,
     PRIMARY,
-    FUNCS.call('Sum', 'Add'),
+    FUNCS.call(nil, 'Add'),
     FUNCS.call(nil, 'Subtract'),
     FUNCS.call('Multiply', 'Multiply'),
     MIN_MAX,
     PAIRWISE_MIN_MAX,
     CONSTANT_MIN_MAX,
     NEGATE,
+    SUMS,
     INITIALIZER
   ].join("\n\n")
   File.open(File.join(current_dir, 'ext/ryeppp/ryeppp.c'), 'w') do |f|

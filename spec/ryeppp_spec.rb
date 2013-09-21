@@ -21,12 +21,6 @@ describe Ryeppp do
     expect{Ryeppp.subtract_v64fv64f_v64f([1.1, 'a'], [2.2, 'b'])}.to raise_error(TypeError)
   end
 
-  # Sum
-  it 'should sum a vector' do
-    Ryeppp.sum_v64f_s64f([1, 2, 3]).should eq(6.0)
-    expect{Ryeppp.sum_v64f_s64f([1, 'a'])}.to raise_error(TypeError)
-  end
-
   # Multiplication
   it 'should multiply a vector of Fixnums' do
     Ryeppp.multiply_v64ss64s_v64s([1, 2, 3], 2).should eq([2, 4, 6])
@@ -95,5 +89,21 @@ describe Ryeppp do
   it 'should negate vectors of Floats' do
     Ryeppp.negate_v64f_s64f([1.1]).should eq([-1.1])
     expect{Ryeppp.negate_v64f_s64f([1.1, 'a'])}.to raise_error(TypeError)
+  end
+
+  # Sum
+  it 'should sum a vector' do
+    Ryeppp.sum_v64f_s64f([1, 2, 3]).should eq(6.0)
+    expect{Ryeppp.sum_v64f_s64f([1, 'a'])}.to raise_error(TypeError)
+  end
+  # Sum Absolute Values
+  it 'should sum absolute values of a vector' do
+    Ryeppp.sumabs_v64f_s64f([1.0, -1.0, 2.0]).should eq(4.0)
+    expect{Ryeppp.sumabs_v64f_s64f([1.0, -1.0, 'a'])}.to raise_error(TypeError)
+  end
+  # Sum Square Values
+  it 'should sum square values of a vector' do
+    Ryeppp.sumsquares_v64f_s64f([1.0, -1.0, 2.0]).should eq(6.0)
+    expect{Ryeppp.sumsquares_v64f_s64f([1.0, -1.0, 'a'])}.to raise_error(TypeError)
   end
 end

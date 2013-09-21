@@ -32,47 +32,11 @@ PRIMARY = %{
 VALUE cRyeppp;
 }.strip.freeze
 
-# op_name is in [Sum, nil, Multiply]
+# op_name is in [nil, nil, Multiply]
 # verb_name is in [Add, Subtract, Multiply]
 FUNCS = Proc.new do |op_name, verb_name|
 %{#{
-    if op_name == 'Sum'
-      %{
-        static VALUE sum_v64f_s64f(VALUE self, VALUE x) {
-          enum YepStatus status;
-          long i;
-          Yep64f sum;
-          long l = RARRAY_LEN(x);
-          VALUE *x_a = RARRAY_PTR(x);
-          Yep64f *yep_x = (Yep64f*)calloc(l, sizeof(Yep64f));
-          assert(yep_x != NULL);
-
-          /* Initialize the Yeppp! library */
-          status = yepLibrary_Init();
-          assert(status == YepStatusOk);
-
-          /* Load x_a into yep_x. */
-          for (i=0; i<l; i++) {
-            if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_FLOAT) {
-              rb_raise(rb_eTypeError, "input was not all integers and floats");
-            }
-            yep_x[i] = (Yep64f)NUM2DBL(x_a[i]);
-          }
-
-          /* Perform the operation */
-          status = yepCore_Sum_V64f_S64f(yep_x, &sum, (YepSize)l);
-          assert(status == YepStatusOk);
-
-          /* Deinitialize the Yeppp! library */
-          status = yepLibrary_Release();
-          assert(status == YepStatusOk);
-        
-          /* Release the memory allocated for arrays */
-          free(yep_x);
-          return DBL2NUM((double)sum);
-        }
-      }
-    elsif op_name == 'Multiply'
+    if op_name == 'Multiply'
       typed_variants(%{
         static VALUE multiply_v64{{type}}s64{{type}}_v64{{type}}(VALUE self, VALUE x, VALUE multiply_by) {
           enum YepStatus status;
@@ -380,6 +344,45 @@ NEGATE = typed_variants(%{
   }
 }).freeze
 
+SUMS = %w{Sum SumAbs SumSquares}.map do |kind|
+  %{
+    static VALUE #{kind.downcase}_v64f_s64f(VALUE self, VALUE x) {
+      enum YepStatus status;
+      long i;
+      long l = RARRAY_LEN(x);
+      VALUE *x_a = RARRAY_PTR(x);
+      Yep64f sum;
+
+      Yep64f *yep_x = (Yep64f*)calloc(l, sizeof(Yep64f));
+      assert(yep_x != NULL);
+
+      /* Initialize the Yeppp! library */
+      status = yepLibrary_Init();
+      assert(status == YepStatusOk);
+
+      /* Load x_a into yep_x. */
+      for (i=0; i<l; i++) {
+        if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_FLOAT) {
+          rb_raise(rb_eTypeError, "input was not all integers and floats");
+        }
+        yep_x[i] = (Yep64f)NUM2DBL(x_a[i]);
+      }
+
+      /* Perform the operation */
+      status = yepCore_#{kind}_V64f_S64f(yep_x, &sum, (YepSize)l);
+      assert(status == YepStatusOk);
+
+      /* Deinitialize the Yeppp! library */
+      status = yepLibrary_Release();
+      assert(status == YepStatusOk);
+    
+      /* Release the memory allocated for array */
+      free(yep_x);
+      return DBL2NUM((double)sum);
+    }
+  }.strip
+end.join("\n\n").freeze
+
 INITIALIZER = %{
 // The initialization method for this module
 void Init_ryeppp() {
@@ -392,10 +395,6 @@ void Init_ryeppp() {
   /* Subtraction */
   rb_define_singleton_method(cRyeppp, "subtract_v64sv64s_v64s", subtract_v64sv64s_v64s, 2);
   rb_define_singleton_method(cRyeppp, "subtract_v64fv64f_v64f", subtract_v64fv64f_v64f, 2);
-
-  /* Sum */
-  rb_define_singleton_method(cRyeppp, "sum_v64f_s64f", sum_v64f_s64f, 1);
-  // Signed sum is not available.
 
   /* Multiplication */
   rb_define_singleton_method(cRyeppp, "multiply_v64fs64f_v64f", multiply_v64fs64f_v64f, 2);
@@ -430,5 +429,13 @@ void Init_ryeppp() {
   /* Negation */
   rb_define_singleton_method(cRyeppp, "negate_v64s_s64s", negate_v64s_s64s, 1);
   rb_define_singleton_method(cRyeppp, "negate_v64f_s64f", negate_v64f_s64f, 1);
+
+  /* Sums */
+  rb_define_singleton_method(cRyeppp, "sum_v64f_s64f", sum_v64f_s64f, 1);
+  // Signed sum is not available.
+  rb_define_singleton_method(cRyeppp, "sumabs_v64f_s64f", sumabs_v64f_s64f, 1);
+  // Signed abs sum is not available.
+  rb_define_singleton_method(cRyeppp, "sumsquares_v64f_s64f", sumsquares_v64f_s64f, 1);
+  // Signed squares sum is not available.
 }
 }.strip.freeze

@@ -138,4 +138,15 @@ describe Ryeppp do
     Ryeppp.tan_v64f_v64f([1.0, 2.0, 3.0]).map{|o| o.round(5)}.should eq([1.55741, -2.18504, -0.14255])
     expect{Ryeppp.tan_v64f_v64f([1.0, 'a'])}.to raise_error(TypeError)
   end
+
+  # Polynomial
+  it 'should evaluate a polynomial for a vector' do
+    # x^2 + x + 1
+    # evaluated at x=1.
+    Ryeppp.evaluatepolynomial_v64fv64f_v64f([1.0, 1.0, 1.0], [1.0]).should eq([3.0])
+    # -5x^3 - 4x^2 + 2x + 1
+    # evaluated at x=0, x=1, and x=2.
+    Ryeppp.evaluatepolynomial_v64fv64f_v64f([-5, -4, 2, 1], [0, 1, 2]).should eq([-5.0, -6.0, 3.0])
+    expect{Ryeppp.evaluatepolynomial_v64fv64f_v64f([1, 'a'], [0, 1])}.to raise_error(TypeError)
+  end
 end

@@ -28,6 +28,7 @@ task :c_generation do
     NEGATE,
     SUMS,
     MATHS,
+    POLYNOMIAL,
     INITIALIZER
   ].join("\n\n")
   File.open(File.join(current_dir, 'ext/ryeppp/ryeppp.c'), 'w') do |f|

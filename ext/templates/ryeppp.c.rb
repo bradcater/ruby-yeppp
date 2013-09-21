@@ -480,7 +480,68 @@ MATHS = MATHS_KINDS.map do |kind|
     }
   }.strip
 end.join("\n\n").freeze
+
+POLYNOMIAL = %{
+  // x is the coefficients
+  // where is the set of points at which to evaluate x
+  static VALUE evaluatepolynomial_v64fv64f_v64f(VALUE self, VALUE x, VALUE where) {
+    enum YepStatus status;
+    long i;
+    long x_l = RARRAY_LEN(x);
+    long y_l = RARRAY_LEN(where);
+    VALUE *x_a = RARRAY_PTR(x);
+    VALUE *y_a = RARRAY_PTR(where);
+    VALUE new_ary;
+
+    Yep64f *yep_x = (Yep64f*)calloc(x_l, sizeof(Yep64f));
+    Yep64f *yep_y = (Yep64f*)calloc(y_l, sizeof(Yep64f));
+    Yep64f *yep_z = (Yep64f*)calloc(y_l, sizeof(Yep64f));
+    assert(yep_x != NULL);
+    assert(yep_y != NULL);
+    assert(yep_z != NULL);
+
+    /* Initialize the Yeppp! library */
+    status = yepLibrary_Init();
+    assert(status == YepStatusOk);
+
+    /* Load x_a into yep_x. */
+    for (i=0; i<x_l; i++) {
+      if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_FLOAT) {
+        rb_raise(rb_eTypeError, "input was not all integers and floats");
+      }
+      yep_x[i] = (Yep64f)NUM2DBL(x_a[i]);
+    }
+    /* Load y_a into yep_y. */
+    for (i=0; i<y_l; i++) {
+      if (TYPE(y_a[i]) != T_FIXNUM && TYPE(y_a[i]) != T_FLOAT) {
+        rb_raise(rb_eTypeError, "input was not all integers and floats");
+      }
+      yep_y[i] = (Yep64f)NUM2DBL(y_a[i]);
+    }
+
+    /* Perform the operation */
+             //yepMath_EvaluatePolynomial_V64fV64f_V64f(coefs, x, pYeppp, YEP_COUNT_OF(coefs), ARRAY_SIZE);
+    status = yepMath_EvaluatePolynomial_V64fV64f_V64f(yep_x, yep_y, yep_z, (YepSize)x_l, (YepSize)y_l);
+    assert(status == YepStatusOk);
+
+    /* Load the Ruby Array */
+    new_ary = rb_ary_new2(y_l);
+    for (i=0; i<y_l; i++) {
+      rb_ary_push(new_ary, DBL2NUM((double)yep_z[i]));
+    }
+
+    /* Deinitialize the Yeppp! library */
+    status = yepLibrary_Release();
+    assert(status == YepStatusOk);
   
+    /* Release the memory allocated for array */
+    free(yep_x);
+    free(yep_y);
+    free(yep_z);
+    return new_ary;
+  }
+}.strip.freeze
+
 INITIALIZER = %{
 // The initialization method for this module
 void Init_ryeppp() {
@@ -543,5 +604,8 @@ void Init_ryeppp() {
   #{MATHS_KINDS.map do |kind|
     %{rb_define_singleton_method(cRyeppp, "#{kind.downcase}_v64f_v64f", #{kind.downcase}_v64f_v64f, 1);}
   end.join("\n")}
+
+  /* Polynomial */
+  rb_define_singleton_method(cRyeppp, "evaluatepolynomial_v64fv64f_v64f", evaluatepolynomial_v64fv64f_v64f, 2);
 }
 }.strip.freeze

@@ -1,3 +1,72 @@
+def allocate_yep64_typed_array_and_assert(var_names, len_var_name, opts={})
+  var_names = Array(var_names)
+  type = opts[:type] || '{{type}}'
+  assert = opts[:assert].nil? ? true : opts[:assert]
+  %{#{var_names.map{|vn| %{Yep64#{type} *yep_#{vn} = (Yep64#{type}*)calloc(#{len_var_name}, sizeof(Yep64#{type}));}}.join("\n")}
+    #{assert ? var_names.map{|vn| %{assert(yep_#{vn} != NULL);}}.join("\n") : nil}}
+end
+
+def deinitialize_yeppp
+  %{/* Deinitialize the Yeppp! library */
+    status = yepLibrary_Release();
+    assert(status == YepStatusOk);}
+end
+
+def initialize_yeppp
+  %{/* Initialize the Yeppp! library */
+    status = yepLibrary_Init();
+    assert(status == YepStatusOk);}
+end
+
+def load_ruby_array_from_yeppp_array(var_name, iteration_var_name, len_var_name, type)
+  %{/* Load the Ruby Array */
+    new_ary = rb_ary_new2(#{len_var_name});
+    for (#{iteration_var_name}=0; #{iteration_var_name}<#{len_var_name}; #{iteration_var_name}++) {
+      rb_ary_push(new_ary, #{type == 'f' ? 'DBL' : 'INT'}2NUM((#{type == 'f' ? 'double' : 'long'})yep_#{var_name}[#{iteration_var_name}]));
+    }}
+end
+def load_ruby_array_from_yeppp_array_parameterized(var_name, iteration_var_name, len_var_name)
+  %{/* Load the Ruby Array */
+    new_ary = rb_ary_new2(#{len_var_name});
+    for (#{iteration_var_name}=0; #{iteration_var_name}<#{len_var_name}; #{iteration_var_name}++) {
+      rb_ary_push(new_ary, {{ruby_type}}2NUM(({{c_type}})yep_#{var_name}[#{iteration_var_name}]));
+    }}
+end
+def load_ruby_array_into_yeppp_array(var_name, iteration_var_name, len_var_name, type, permitted_types)
+  pt = permitted_types.map do |t|
+    case t
+      when :float
+        "TYPE(#{var_name}_a[#{iteration_var_name}]) != T_FLOAT"
+      when :integer
+        "TYPE(#{var_name}_a[#{iteration_var_name}]) != T_FIXNUM"
+      else
+        raise "Invalid permitted_type: #{t}."
+    end
+  end.join(' && ')
+  %{/* Load #{var_name}_a into yep_#{var_name}. */
+    for (#{iteration_var_name}=0; #{iteration_var_name}<#{len_var_name}; #{iteration_var_name}++) {
+      if (#{pt}) {
+        rb_raise(rb_eTypeError, "input was not all #{permitted_types.map(&:to_s).join(' and ')}");
+      }
+      yep_#{var_name}[#{iteration_var_name}] = (Yep64#{type})NUM2#{type == 'f' ? 'DBL' : 'INT'}(#{var_name}_a[#{iteration_var_name}]);
+    }}
+end
+def load_ruby_array_into_yeppp_array_parameterized(var_name, iteration_var_name, len_var_name)
+  %{/* Load #{var_name}_a into yep_#{var_name}. */
+    for (#{iteration_var_name}=0; #{iteration_var_name}<#{len_var_name}; #{iteration_var_name}++) {
+      if (TYPE(#{var_name}_a[#{iteration_var_name}]) != {{ruby_klass}}) {
+        rb_raise(rb_eTypeError, "input was not all {{ruby_klass_human}}");
+      }
+      yep_#{var_name}[#{iteration_var_name}] = (Yep64{{type}})NUM2{{ruby_type}}(#{var_name}_a[#{iteration_var_name}]);
+    }}
+end
+
+def release_array_memory(var_names)
+  var_names = Array(var_names)
+  %{/* Release the memory allocated for array#{var_names.size == 1 ? nil : 's'} */
+    #{var_names.map{|vn| %{free(yep_#{vn});}}.join("\n")}}
+end
+
 def typed_variants(s, opts={})
   [
     ['s', 'long', 'INT', 'T_FIXNUM', 'integers'],
@@ -33,11 +102,9 @@ PRIMARY = %{
 VALUE cRyeppp;
 }.strip.freeze
 
-# op_name is in [nil, nil, Multiply]
 # verb_name is in [Add, Subtract, Multiply]
-FUNCS = Proc.new do |op_name, verb_name|
-%{#{
-    if op_name == 'Multiply'
+FUNCS = Proc.new do |verb_name|
+%{#{if verb_name == 'Multiply'
       typed_variants(%{
         static VALUE multiply_v64{{type}}s64{{type}}_v64{{type}}(VALUE self, VALUE x, VALUE multiply_by) {
           enum YepStatus status;
@@ -46,44 +113,27 @@ FUNCS = Proc.new do |op_name, verb_name|
           VALUE *x_a = RARRAY_PTR(x);
           long l = RARRAY_LEN(x);
           Yep64{{type}} mult_by = (Yep64{{type}})NUM2DBL(multiply_by);
-          Yep64{{type}} *yep_x = (Yep64{{type}}*)calloc(l, sizeof(Yep64{{type}}));
-          Yep64{{type}} *yep_y = (Yep64{{type}}*)calloc(l, sizeof(Yep64{{type}}));
         
           /* Allocate arrays of inputs and outputs */
-          assert(yep_x != NULL);
-          assert(yep_y != NULL);
+          #{allocate_yep64_typed_array_and_assert(%w{x y}, 'l')}
         
-          /* Initialize the Yeppp! library */
-          status = yepLibrary_Init();
-          assert(status == YepStatusOk);
+          #{initialize_yeppp}
         
-          /* Load x_a into yep_x. */
-          for (i=0; i<l; i++) {
-            if (TYPE(x_a[i]) != {{ruby_klass}}) {
-              rb_raise(rb_eTypeError, "input was not all {{ruby_klass_human}}");
-            }
-            yep_x[i] = (Yep64{{type}})NUM2{{ruby_type}}(x_a[i]);
-          }
+          #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l')}
         
           /* Perform the operation */
           status = yepCore_Multiply_V64{{type}}S64{{type}}_V64{{type}}(yep_x, mult_by, yep_y, (YepSize)l);
           assert(status == YepStatusOk);
 
-          /* Load the Ruby Array */
-          new_ary = rb_ary_new2(l);
-          for (i=0; i<l; i++) {
-            rb_ary_push(new_ary, {{ruby_type}}2NUM(({{c_type}})yep_y[i]));
-          }
+          #{load_ruby_array_from_yeppp_array_parameterized('y', 'i', 'l')}
         
-          /* Deinitialize the Yeppp! library */
-          status = yepLibrary_Release();
-          assert(status == YepStatusOk);
-        
-          /* Release the memory allocated for arrays */
-          free(yep_x);
+          #{deinitialize_yeppp}
+          
+          #{release_array_memory(%w{x y})}
+          
           return new_ary;
         }
-      }).freeze
+      }).strip.freeze
     end
   }
 
@@ -96,47 +146,25 @@ FUNCS = Proc.new do |op_name, verb_name|
       VALUE *x_a = RARRAY_PTR(x);
       VALUE *y_a = RARRAY_PTR(y);
       long l = RARRAY_LEN(x);
-      Yep64{{type}} *yep_x = (Yep64{{type}}*)calloc(l, sizeof(Yep64{{type}}));
-      Yep64{{type}} *yep_y = (Yep64{{type}}*)calloc(l, sizeof(Yep64{{type}}));
-      Yep64{{type}} *yep_z = (Yep64{{type}}*)calloc(l, sizeof(Yep64{{type}}));
     
       /* Allocate arrays of inputs and outputs */
-      assert(yep_x != NULL);
-      assert(yep_y != NULL);
-      assert(yep_z != NULL);
+      #{allocate_yep64_typed_array_and_assert(%w{x y z}, 'l')}
+
+      #{initialize_yeppp}
     
-      /* Initialize the Yeppp! library */
-      status = yepLibrary_Init();
-      assert(status == YepStatusOk);
-    
-      /* Load x_a and y_a into yep_x and yep_y. */
-      for (i=0; i<l; i++) {
-        if (TYPE(x_a[i]) != {{ruby_klass}}) {
-          rb_raise(rb_eTypeError, "input was not all {{ruby_klass_human}}");
-        }
-        yep_x[i] = (Yep64{{type}})NUM2{{ruby_type}}(x_a[i]);
-        if (TYPE(y_a[i]) != {{ruby_klass}}) {
-          rb_raise(rb_eTypeError, "input was not all {{ruby_klass_human}}");
-        }
-        yep_y[i] = (Yep64{{type}})NUM2{{ruby_type}}(y_a[i]);
-      }
+      #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l')}
+      #{load_ruby_array_into_yeppp_array_parameterized('y', 'i', 'l')}
     
       /* Perform the addition */
       status = yepCore_#{verb_name}_V64{{type}}V64{{type}}_V64{{type}}(yep_x, yep_y, yep_z, (YepSize)l);
       assert(status == YepStatusOk);
-      new_ary = rb_ary_new2(l);
-      for (i=0; i<l; i++) {
-        rb_ary_push(new_ary, {{ruby_type}}2NUM(({{c_type}})yep_z[i]));
-      }
+
+      #{load_ruby_array_from_yeppp_array_parameterized('z', 'i', 'l')}
     
-      /* Deinitialize the Yeppp! library */
-      status = yepLibrary_Release();
-      assert(status == YepStatusOk);
+      #{deinitialize_yeppp}
     
-      /* Release the memory allocated for arrays */
-      free(yep_x);
-      free(yep_y);
-      free(yep_z);
+      #{release_array_memory(%w{x y z})}
+
       return new_ary;
     }
   })}
@@ -148,44 +176,26 @@ DOT_PRODUCT = %{
   static VALUE dotproduct_v64fv64f_s64f(VALUE self, VALUE x, VALUE y) {
     enum YepStatus status;
     long i;
+    Yep64f dp;
     VALUE *x_a = RARRAY_PTR(x);
     VALUE *y_a = RARRAY_PTR(y);
     long l = RARRAY_LEN(x);
-    Yep64f dp;
   
     /* Allocate arrays of inputs and outputs */
-    Yep64f *yep_x = (Yep64f*)calloc(l, sizeof(Yep64f));
-    Yep64f *yep_y = (Yep64f*)calloc(l, sizeof(Yep64f));
-    assert(yep_x != NULL);
-    assert(yep_y != NULL);
+    #{allocate_yep64_typed_array_and_assert(%w{x y}, 'l', :type => 'f')}
 
-    /* Initialize the Yeppp! library */
-    status = yepLibrary_Init();
-    assert(status == YepStatusOk);
+    #{initialize_yeppp}
   
-    /* Load x_a and y_a into yep_x and yep_y */
-    for (i=0; i<l; i++) {
-      if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_FLOAT) {
-        rb_raise(rb_eTypeError, "input was not all integers and floats");
-      }
-      yep_x[i] = (Yep64f)NUM2DBL(x_a[i]);
-      if (TYPE(y_a[i]) != T_FIXNUM && TYPE(y_a[i]) != T_FLOAT) {
-        rb_raise(rb_eTypeError, "input was not all integers and floats");
-      }
-      yep_y[i] = (Yep64f)NUM2DBL(y_a[i]);
-    }
+    #{load_ruby_array_into_yeppp_array('x', 'i', 'l', 'f', [:integer, :float])}
+    #{load_ruby_array_into_yeppp_array('y', 'i', 'l', 'f', [:integer, :float])}
   
     /* Perform the operation */
     status = yepCore_DotProduct_V64fV64f_S64f(yep_x, yep_y, &dp, (YepSize)l);
     assert(status == YepStatusOk);
 
-    /* Deinitialize the Yeppp! library */
-    status = yepLibrary_Release();
-    assert(status == YepStatusOk);
+    #{deinitialize_yeppp}
   
-    /* Release the memory allocated for array */
-    free(yep_x);
-    free(yep_y);
+    #{release_array_memory(%w{x y})}
   
     return DBL2NUM((double)dp);
   }
@@ -197,36 +207,24 @@ MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
     static VALUE #{kind.downcase}_v64{{type}}_s64{{type}}(VALUE self, VALUE x) {
       enum YepStatus status;
       long i;
+      Yep64{{type}} #{kind.downcase};
       VALUE *x_a = RARRAY_PTR(x);
       long l = RARRAY_LEN(x);
-      Yep64{{type}} #{kind.downcase};
   
       /* Allocate arrays of inputs and outputs */
-      Yep64{{type}} *yep_x = (Yep64{{type}}*)calloc(l, sizeof(Yep64{{type}}));
-      assert(yep_x != NULL);
+      #{allocate_yep64_typed_array_and_assert('x', 'l')}
 
-      /* Initialize the Yeppp! library */
-      status = yepLibrary_Init();
-      assert(status == YepStatusOk);
+      #{initialize_yeppp}
   
-      /* Load x_a into yep_x */
-      for (i=0; i<l; i++) {
-        if (TYPE(x_a[i]) != {{ruby_klass}}) {
-          rb_raise(rb_eTypeError, "input was not all {{ruby_klass_human}}");
-        }
-        yep_x[i] = (Yep64{{type}})NUM2{{ruby_type}}(x_a[i]);
-      }
+      #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l')}
   
       /* Perform the operation */
       status = yepCore_#{kind}_V64{{type}}_S64{{type}}(yep_x, &#{kind.downcase}, (YepSize)l);
       assert(status == YepStatusOk);
 
-      /* Deinitialize the Yeppp! library */
-      status = yepLibrary_Release();
-      assert(status == YepStatusOk);
+      #{deinitialize_yeppp}
   
-      /* Release the memory allocated for array */
-      free(yep_x);
+      #{release_array_memory(%w{x})}
    
       return {{ruby_type}}2NUM(({{c_type}})#{kind.downcase});
     }
@@ -239,53 +237,28 @@ PAIRWISE_MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
     static VALUE #{kind.downcase}_v64{{type}}v64{{type}}_v64{{type}}(VALUE self, VALUE x, VALUE y) {
       enum YepStatus status;
       long i;
+      VALUE new_ary;
       VALUE *x_a = RARRAY_PTR(x);
       VALUE *y_a = RARRAY_PTR(y);
       long l = RARRAY_LEN(x);
-      VALUE new_ary;
   
       /* Allocate arrays of inputs and outputs */
-      Yep64{{type}} *yep_x = (Yep64{{type}}*)calloc(l, sizeof(Yep64{{type}}));
-      Yep64{{type}} *yep_y = (Yep64{{type}}*)calloc(l, sizeof(Yep64{{type}}));
-      Yep64{{type}} *yep_z = (Yep64{{type}}*)calloc(l, sizeof(Yep64{{type}}));
-      assert(yep_x != NULL);
-      assert(yep_y != NULL);
-      assert(yep_z != NULL);
+      #{allocate_yep64_typed_array_and_assert(%w{x y z}, 'l')}
 
-      /* Initialize the Yeppp! library */
-      status = yepLibrary_Init();
-      assert(status == YepStatusOk);
+      #{initialize_yeppp}
   
-      /* Load x_a and y_a into yep_x and yep_y */
-      for (i=0; i<l; i++) {
-        if (TYPE(x_a[i]) != {{ruby_klass}}) {
-          rb_raise(rb_eTypeError, "input was not all {{ruby_klass_human}}");
-        }
-        yep_x[i] = (Yep64{{type}})NUM2{{ruby_type}}(x_a[i]);
-        if (TYPE(y_a[i]) != {{ruby_klass}}) {
-          rb_raise(rb_eTypeError, "input was not all {{ruby_klass_human}}");
-        }
-        yep_y[i] = (Yep64{{type}})NUM2{{ruby_type}}(y_a[i]);
-      }
+      #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l')}
+      #{load_ruby_array_into_yeppp_array_parameterized('y', 'i', 'l')}
   
       /* Perform the operation */
       status = yepCore_#{kind}_V64{{type}}V64{{type}}_V64{{type}}(yep_x, yep_y, yep_z, (YepSize)l);
       assert(status == YepStatusOk);
 
-      /* Create the new Ruby Array */
-      new_ary = rb_ary_new2(l);
-      for (i=0; i<l; i++) {
-        rb_ary_push(new_ary, {{ruby_type}}2NUM(({{c_type}})yep_z[i]));
-      }
+      #{load_ruby_array_from_yeppp_array_parameterized('z', 'i', 'l')}
 
-      /* Deinitialize the Yeppp! library */
-      status = yepLibrary_Release();
-      assert(status == YepStatusOk);
+      #{deinitialize_yeppp}
   
-      /* Release the memory allocated for array */
-      free(yep_x);
-      free(yep_y);
-      free(yep_z);
+      #{release_array_memory(%w{x y z})}
    
       return new_ary;
     }
@@ -298,46 +271,27 @@ CONSTANT_MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
     static VALUE #{kind.downcase}_v64{{type}}s64{{type}}_v64{{type}}(VALUE self, VALUE x, VALUE c) {
       enum YepStatus status;
       long i;
+      VALUE new_ary;
       VALUE *x_a = RARRAY_PTR(x);
       long l = RARRAY_LEN(x);
       Yep64f konst = (Yep64f)NUM2{{ruby_type}}(c);
-      VALUE new_ary;
   
       /* Allocate arrays of inputs and outputs */
-      Yep64{{type}} *yep_x = (Yep64{{type}}*)calloc(l, sizeof(Yep64{{type}}));
-      Yep64{{type}} *yep_y = (Yep64{{type}}*)calloc(l, sizeof(Yep64{{type}}));
-      assert(yep_x != NULL);
-      assert(yep_y != NULL);
+      #{allocate_yep64_typed_array_and_assert(%w{x y}, 'l')}
 
-      /* Initialize the Yeppp! library */
-      status = yepLibrary_Init();
-      assert(status == YepStatusOk);
+      #{initialize_yeppp}
   
-      /* Load x_a into yep_x */
-      for (i=0; i<l; i++) {
-        if (TYPE(x_a[i]) != {{ruby_klass}}) {
-          rb_raise(rb_eTypeError, "input was not all {{ruby_klass_human}}");
-        }
-        yep_x[i] = (Yep64{{type}})NUM2{{ruby_type}}(x_a[i]);
-      }
+      #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l')}
   
       /* Perform the operation */
       status = yepCore_#{kind}_V64{{type}}S64{{type}}_V64{{type}}(yep_x, konst, yep_y, (YepSize)l);
       assert(status == YepStatusOk);
 
-      /* Create the new Ruby Array */
-      new_ary = rb_ary_new2(l);
-      for (i=0; i<l; i++) {
-        rb_ary_push(new_ary, {{ruby_type}}2NUM(({{c_type}})yep_y[i]));
-      }
+      #{load_ruby_array_from_yeppp_array_parameterized('y', 'i', 'l')}
 
-      /* Deinitialize the Yeppp! library */
-      status = yepLibrary_Release();
-      assert(status == YepStatusOk);
+      #{deinitialize_yeppp}
   
-      /* Release the memory allocated for array */
-      free(yep_x);
-      free(yep_y);
+      #{release_array_memory(%w{x y})}
    
       return new_ary;
     }
@@ -354,40 +308,21 @@ NEGATE = typed_variants(%{
     long l = RARRAY_LEN(x);
   
     /* Allocate arrays of inputs and outputs */
-    Yep64{{type}} *yep_x = (Yep64{{type}}*)calloc(l, sizeof(Yep64{{type}}));
-    Yep64{{type}} *yep_y = (Yep64{{type}}*)calloc(l, sizeof(Yep64{{type}}));
-    assert(yep_x != NULL);
-    assert(yep_y != NULL);
+    #{allocate_yep64_typed_array_and_assert(%w{x y}, 'l')}
   
-    /* Initialize the Yeppp! library */
-    status = yepLibrary_Init();
-    assert(status == YepStatusOk);
+    #{initialize_yeppp}
   
-    /* Load x_a into yep_x */
-    for (i=0; i<l; i++) {
-      if (TYPE(x_a[i]) != {{ruby_klass}}) {
-        rb_raise(rb_eTypeError, "input was not all {{ruby_klass_human}}");
-      }
-      yep_x[i] = (Yep64{{type}})NUM2{{ruby_type}}(x_a[i]);
-    }
+    #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l')}
   
     /* Perform the negation */
     status = yepCore_Negate_V64{{type}}_V64{{type}}(yep_x, yep_y, (YepSize)l);
     assert(status == YepStatusOk);
   
-    /* Create the new Ruby Array */
-    new_ary = rb_ary_new2(l);
-    for (i=0; i<l; i++) {
-      rb_ary_push(new_ary, {{ruby_type}}2NUM(({{c_type}})yep_y[i]));
-    }
+    #{load_ruby_array_from_yeppp_array_parameterized('y', 'i', 'l')}
   
-    /* Deinitialize the Yeppp! library */
-    status = yepLibrary_Release();
-    assert(status == YepStatusOk);
+    #{deinitialize_yeppp}
   
-    /* Release the memory allocated for arrays */
-    free(yep_x);
-    free(yep_y);
+    #{release_array_memory(%w{x y})}
    
     return new_ary;
   }
@@ -398,35 +333,25 @@ SUMS = %w{Sum SumAbs SumSquares}.map do |kind|
     static VALUE #{kind.downcase}_v64f_s64f(VALUE self, VALUE x) {
       enum YepStatus status;
       long i;
+      Yep64f sum;
       long l = RARRAY_LEN(x);
       VALUE *x_a = RARRAY_PTR(x);
-      Yep64f sum;
 
-      Yep64f *yep_x = (Yep64f*)calloc(l, sizeof(Yep64f));
-      assert(yep_x != NULL);
+      /* Allocate arrays of inputs and outputs */
+      #{allocate_yep64_typed_array_and_assert('x', 'l', :type => 'f')}
 
-      /* Initialize the Yeppp! library */
-      status = yepLibrary_Init();
-      assert(status == YepStatusOk);
+      #{initialize_yeppp}
 
-      /* Load x_a into yep_x. */
-      for (i=0; i<l; i++) {
-        if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_FLOAT) {
-          rb_raise(rb_eTypeError, "input was not all integers and floats");
-        }
-        yep_x[i] = (Yep64f)NUM2DBL(x_a[i]);
-      }
+      #{load_ruby_array_into_yeppp_array('x', 'i', 'l', 'f', [:integer, :float])}
 
       /* Perform the operation */
       status = yepCore_#{kind}_V64f_S64f(yep_x, &sum, (YepSize)l);
       assert(status == YepStatusOk);
 
-      /* Deinitialize the Yeppp! library */
-      status = yepLibrary_Release();
-      assert(status == YepStatusOk);
+      #{deinitialize_yeppp}
     
-      /* Release the memory allocated for array */
-      free(yep_x);
+      #{release_array_memory(%w{x})}
+
       return DBL2NUM((double)sum);
     }
   }.strip
@@ -438,44 +363,27 @@ MATHS = MATHS_KINDS.map do |kind|
     static VALUE #{kind.downcase}_v64f_v64f(VALUE self, VALUE x) {
       enum YepStatus status;
       long i;
+      VALUE new_ary;
       long l = RARRAY_LEN(x);
       VALUE *x_a = RARRAY_PTR(x);
-      VALUE new_ary;
 
-      Yep64f *yep_x = (Yep64f*)calloc(l, sizeof(Yep64f));
-      Yep64f *yep_y = (Yep64f*)calloc(l, sizeof(Yep64f));
-      assert(yep_x != NULL);
-      assert(yep_y != NULL);
+      /* Allocate arrays of inputs and outputs */
+      #{allocate_yep64_typed_array_and_assert(%w{x y}, 'l', :type => 'f')}
 
-      /* Initialize the Yeppp! library */
-      status = yepLibrary_Init();
-      assert(status == YepStatusOk);
+      #{initialize_yeppp}
 
-      /* Load x_a into yep_x. */
-      for (i=0; i<l; i++) {
-        if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_FLOAT) {
-          rb_raise(rb_eTypeError, "input was not all integers and floats");
-        }
-        yep_x[i] = (Yep64f)NUM2DBL(x_a[i]);
-      }
+      #{load_ruby_array_into_yeppp_array('x', 'i', 'l', 'f', [:integer, :float])}
 
       /* Perform the operation */
       status = yepMath_#{kind}_V64f_V64f(yep_x, yep_y, (YepSize)l);
       assert(status == YepStatusOk);
 
-      /* Load the Ruby Array */
-      new_ary = rb_ary_new2(l);
-      for (i=0; i<l; i++) {
-        rb_ary_push(new_ary, DBL2NUM((double)yep_y[i]));
-      }
+      #{load_ruby_array_from_yeppp_array('y', 'i', 'l', 'f')}
 
-      /* Deinitialize the Yeppp! library */
-      status = yepLibrary_Release();
-      assert(status == YepStatusOk);
+      #{deinitialize_yeppp}
     
-      /* Release the memory allocated for array */
-      free(yep_x);
-      free(yep_y);
+      #{release_array_memory(%w{x y})}
+
       return new_ary;
     }
   }.strip
@@ -487,57 +395,34 @@ POLYNOMIAL = %{
   static VALUE evaluatepolynomial_v64fv64f_v64f(VALUE self, VALUE x, VALUE where) {
     enum YepStatus status;
     long i;
+    VALUE new_ary;
     long x_l = RARRAY_LEN(x);
     long y_l = RARRAY_LEN(where);
     VALUE *x_a = RARRAY_PTR(x);
     VALUE *y_a = RARRAY_PTR(where);
-    VALUE new_ary;
 
-    Yep64f *yep_x = (Yep64f*)calloc(x_l, sizeof(Yep64f));
-    Yep64f *yep_y = (Yep64f*)calloc(y_l, sizeof(Yep64f));
-    Yep64f *yep_z = (Yep64f*)calloc(y_l, sizeof(Yep64f));
+    /* Allocate arrays of inputs and outputs */
+    #{allocate_yep64_typed_array_and_assert(%w{x}, 'x_l', :assert => false, :type => 'f')}
+    #{allocate_yep64_typed_array_and_assert(%w{y z}, 'y_l', :assert => false, :type => 'f')}
     assert(yep_x != NULL);
     assert(yep_y != NULL);
     assert(yep_z != NULL);
 
-    /* Initialize the Yeppp! library */
-    status = yepLibrary_Init();
-    assert(status == YepStatusOk);
+    #{initialize_yeppp}
 
-    /* Load x_a into yep_x. */
-    for (i=0; i<x_l; i++) {
-      if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_FLOAT) {
-        rb_raise(rb_eTypeError, "input was not all integers and floats");
-      }
-      yep_x[i] = (Yep64f)NUM2DBL(x_a[i]);
-    }
-    /* Load y_a into yep_y. */
-    for (i=0; i<y_l; i++) {
-      if (TYPE(y_a[i]) != T_FIXNUM && TYPE(y_a[i]) != T_FLOAT) {
-        rb_raise(rb_eTypeError, "input was not all integers and floats");
-      }
-      yep_y[i] = (Yep64f)NUM2DBL(y_a[i]);
-    }
+    #{load_ruby_array_into_yeppp_array('x', 'i', 'x_l', 'f', [:integer, :float])}
+    #{load_ruby_array_into_yeppp_array('y', 'i', 'y_l', 'f', [:integer, :float])}
 
     /* Perform the operation */
-             //yepMath_EvaluatePolynomial_V64fV64f_V64f(coefs, x, pYeppp, YEP_COUNT_OF(coefs), ARRAY_SIZE);
     status = yepMath_EvaluatePolynomial_V64fV64f_V64f(yep_x, yep_y, yep_z, (YepSize)x_l, (YepSize)y_l);
     assert(status == YepStatusOk);
 
-    /* Load the Ruby Array */
-    new_ary = rb_ary_new2(y_l);
-    for (i=0; i<y_l; i++) {
-      rb_ary_push(new_ary, DBL2NUM((double)yep_z[i]));
-    }
+    #{load_ruby_array_from_yeppp_array('z', 'i', 'y_l', 'f')}
 
-    /* Deinitialize the Yeppp! library */
-    status = yepLibrary_Release();
-    assert(status == YepStatusOk);
+    #{deinitialize_yeppp}
   
-    /* Release the memory allocated for array */
-    free(yep_x);
-    free(yep_y);
-    free(yep_z);
+    #{release_array_memory(%w{x y z})}
+    
     return new_ary;
   }
 }.strip.freeze

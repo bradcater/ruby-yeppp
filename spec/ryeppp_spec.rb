@@ -22,11 +22,11 @@ describe Ryeppp do
   end
 
   # Multiplication
-  it 'should multiply a vector of Fixnums' do
+  it 'should multiply a vector of Fixnums by a constant' do
     Ryeppp.multiply_v64ss64s_v64s([1, 2, 3], 2).should eq([2, 4, 6])
     expect{Ryeppp.multiply_v64ss64s_v64s([1, 'a'], 2)}.to raise_error(TypeError)
   end
-  it 'should multiply a vector of Floats' do
+  it 'should multiply a vector of Floats by a constant' do
     Ryeppp.multiply_v64fs64f_v64f([1.0, 2.0, 3.0], 2.0).should eq([2.0, 4.0, 6.0])
     expect{Ryeppp.multiply_v64fs64f_v64f([1, 'a'], 2)}.to raise_error(TypeError)
   end
@@ -40,7 +40,7 @@ describe Ryeppp do
   end
 
   # Dot Product
-  it 'should do the dot product' do
+  it 'should do the dot product of vectors' do
     Ryeppp.dotproduct_v64fv64f_s64f([1, 2, 3], [4, 5, 6]).should eq(32.0)
     expect{Ryeppp.dotproduct_v64fv64f_s64f([1, 2, 'a'], [4, 5, 'b'])}.to raise_error(TypeError)
   end
@@ -71,7 +71,7 @@ describe Ryeppp do
     expect{Ryeppp.min_v64fv64f_v64f([1.0, 'a'], [2.0, 'b'])}.to raise_error(TypeError)
   end
   # Pairwise Maxima
-  it 'should find the maximum in a vector of Floats' do
+  it 'should find the pairwise maxima in vectors of Floats' do
     Ryeppp.max_v64fv64f_v64f([1.0, 2.0, 3.0], [3.0, 2.0, 1.0]).should eq([3.0, 2.0, 3.0])
     expect{Ryeppp.max_v64fv64f_v64f([1.0, 'a'], [2.0, 'b'])}.to raise_error(TypeError)
   end

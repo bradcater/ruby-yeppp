@@ -18,9 +18,9 @@ task :c_generation do
   c_code = [
     HEADERS,
     PRIMARY,
-    FUNCS.call(nil, 'Add'),
-    FUNCS.call(nil, 'Subtract'),
-    FUNCS.call('Multiply', 'Multiply'),
+    FUNCS.call('Add'),
+    FUNCS.call('Subtract'),
+    FUNCS.call('Multiply'),
     DOT_PRODUCT,
     MIN_MAX,
     PAIRWISE_MIN_MAX,

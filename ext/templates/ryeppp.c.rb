@@ -142,6 +142,54 @@ FUNCS = Proc.new do |op_name, verb_name|
 }
 end
 
+DOT_PRODUCT = %{
+  // Get the dot product of 2 Arrays.
+  static VALUE dotproduct_v64fv64f_s64f(VALUE self, VALUE x, VALUE y) {
+    enum YepStatus status;
+    long i;
+    VALUE *x_a = RARRAY_PTR(x);
+    VALUE *y_a = RARRAY_PTR(y);
+    long l = RARRAY_LEN(x);
+    Yep64f dp;
+  
+    /* Allocate arrays of inputs and outputs */
+    Yep64f *yep_x = (Yep64f*)calloc(l, sizeof(Yep64f));
+    Yep64f *yep_y = (Yep64f*)calloc(l, sizeof(Yep64f));
+    assert(yep_x != NULL);
+    assert(yep_y != NULL);
+
+    /* Initialize the Yeppp! library */
+    status = yepLibrary_Init();
+    assert(status == YepStatusOk);
+  
+    /* Load x_a and y_a into yep_x and yep_y */
+    for (i=0; i<l; i++) {
+      if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_FLOAT) {
+        rb_raise(rb_eTypeError, "input was not all integers and floats");
+      }
+      yep_x[i] = (Yep64f)NUM2DBL(x_a[i]);
+      if (TYPE(y_a[i]) != T_FIXNUM && TYPE(y_a[i]) != T_FLOAT) {
+        rb_raise(rb_eTypeError, "input was not all integers and floats");
+      }
+      yep_y[i] = (Yep64f)NUM2DBL(y_a[i]);
+    }
+  
+    /* Perform the operation */
+    status = yepCore_DotProduct_V64fV64f_S64f(yep_x, yep_y, &dp, (YepSize)l);
+    assert(status == YepStatusOk);
+
+    /* Deinitialize the Yeppp! library */
+    status = yepLibrary_Release();
+    assert(status == YepStatusOk);
+  
+    /* Release the memory allocated for array */
+    free(yep_x);
+    free(yep_y);
+  
+    return DBL2NUM((double)dp);
+  }
+}.strip
+
 MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
   %{
     // Get the #{kind.downcase} value from an Array.
@@ -401,6 +449,9 @@ void Init_ryeppp() {
   rb_define_singleton_method(cRyeppp, "multiply_v64sv64s_v64s", multiply_v64sv64s_v64s, 2);
   rb_define_singleton_method(cRyeppp, "multiply_v64fv64f_v64f", multiply_v64fv64f_v64f, 2);
   rb_define_singleton_method(cRyeppp, "multiply_v64ss64s_v64s", multiply_v64ss64s_v64s, 2);
+
+  /* Dot Product */
+  rb_define_singleton_method(cRyeppp, "dotproduct_v64fv64f_s64f", dotproduct_v64fv64f_s64f, 2);
 
   /* Minimum */
   rb_define_singleton_method(cRyeppp, "min_v64f_s64f", min_v64f_s64f, 1);

@@ -39,6 +39,12 @@ describe Ryeppp do
     expect{Ryeppp.multiply_v64fv64f_v64f([1.1, 'a'], [2.2, 'b'])}.to raise_error(TypeError)
   end
 
+  # Dot Product
+  it 'should do the dot product' do
+    Ryeppp.dotproduct_v64fv64f_s64f([1, 2, 3], [4, 5, 6]).should eq(32.0)
+    expect{Ryeppp.dotproduct_v64fv64f_s64f([1, 2, 'a'], [4, 5, 'b'])}.to raise_error(TypeError)
+  end
+
   # Minimum
   it 'should find the minimum in a vector of Fixnums' do
     Ryeppp.min_v64s_s64s([3, 2, 1]).should eq(1)

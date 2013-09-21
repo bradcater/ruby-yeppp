@@ -8,9 +8,9 @@ Gem::Specification.new do |spec|
   spec.version       = Ryeppp::VERSION
   spec.authors       = ["Brad Cater"]
   spec.email         = ["bradcater@gmail.com"]
-  spec.description   = %q{This gem provides bindings to the Yeppp! library.}
+  spec.description   = %q{This gem provides bindings to the Yeppp! library. According to the documentation, "Yeppp! is a high-performance SIMD-optimized mathematical library for x86, ARM, and MIPS processors on Windows, Android, Mac OS X, and GNU/Linux systems."}
   spec.summary       = %q{This gem provides bindings to the Yeppp! library.}
-  spec.homepage      = ""
+  spec.homepage      = "https://github.com/bradcater/ruby-yeppp"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files`.split($/)

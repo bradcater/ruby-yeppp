@@ -433,12 +433,12 @@ void Init_ryeppp() {
   cRyeppp = rb_define_class("Ryeppp", rb_cObject);
 
   /* Addition */
-  rb_define_singleton_method(cRyeppp, "add_v64sv64s_v64s", add_v64sv64s_v64s, 2);
   rb_define_singleton_method(cRyeppp, "add_v64fv64f_v64f", add_v64fv64f_v64f, 2);
+  rb_define_singleton_method(cRyeppp, "add_v64sv64s_v64s", add_v64sv64s_v64s, 2);
 
   /* Subtraction */
-  rb_define_singleton_method(cRyeppp, "subtract_v64sv64s_v64s", subtract_v64sv64s_v64s, 2);
   rb_define_singleton_method(cRyeppp, "subtract_v64fv64f_v64f", subtract_v64fv64f_v64f, 2);
+  rb_define_singleton_method(cRyeppp, "subtract_v64sv64s_v64s", subtract_v64sv64s_v64s, 2);
 
   /* Multiplication */
   rb_define_singleton_method(cRyeppp, "multiply_v64fs64f_v64f", multiply_v64fs64f_v64f, 2);
@@ -474,8 +474,8 @@ void Init_ryeppp() {
   // Constant signed max is not available.
 
   /* Negation */
-  rb_define_singleton_method(cRyeppp, "negate_v64s_s64s", negate_v64s_s64s, 1);
   rb_define_singleton_method(cRyeppp, "negate_v64f_s64f", negate_v64f_s64f, 1);
+  rb_define_singleton_method(cRyeppp, "negate_v64s_s64s", negate_v64s_s64s, 1);
 
   /* Sums */
   rb_define_singleton_method(cRyeppp, "sum_v64f_s64f", sum_v64f_s64f, 1);

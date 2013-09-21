@@ -112,4 +112,30 @@ describe Ryeppp do
     Ryeppp.sumsquares_v64f_s64f([1.0, -1.0, 2.0]).should eq(6.0)
     expect{Ryeppp.sumsquares_v64f_s64f([1.0, -1.0, 'a'])}.to raise_error(TypeError)
   end
+
+  # Log
+  it 'should find the natural logarithm of elements of a vector' do
+    Ryeppp.log_v64f_v64f([1.0, 2.0, 3.0]).map{|o| o.round(5)}.should eq([0.0, 0.69315, 1.09861])
+    expect{Ryeppp.log_v64f_v64f([1.0, 'a'])}.to raise_error(TypeError)
+  end
+  # Exp
+  it 'should find the base e exponent of elements of a vector' do
+    Ryeppp.exp_v64f_v64f([1.0, 2.0, 3.0]).map{|o| o.round(5)}.should eq([2.71828, 7.38906, 20.08554])
+    expect{Ryeppp.exp_v64f_v64f([1.0, 'a'])}.to raise_error(TypeError)
+  end
+  # Sin
+  it 'should find the sine of elements of a vector' do
+    Ryeppp.sin_v64f_v64f([1.0, 2.0, 3.0]).map{|o| o.round(5)}.should eq([0.84147, 0.9093, 0.14112])
+    expect{Ryeppp.sin_v64f_v64f([1.0, 'a'])}.to raise_error(TypeError)
+  end
+  # Cos
+  it 'should find the cosine of elements of a vector' do
+    Ryeppp.cos_v64f_v64f([1.0, 2.0, 3.0]).map{|o| o.round(5)}.should eq([0.5403, -0.41615, -0.98999])
+    expect{Ryeppp.cos_v64f_v64f([1.0, 'a'])}.to raise_error(TypeError)
+  end
+  # Tan
+  it 'should find the tangent of elements of a vector' do
+    Ryeppp.tan_v64f_v64f([1.0, 2.0, 3.0]).map{|o| o.round(5)}.should eq([1.55741, -2.18504, -0.14255])
+    expect{Ryeppp.tan_v64f_v64f([1.0, 'a'])}.to raise_error(TypeError)
+  end
 end

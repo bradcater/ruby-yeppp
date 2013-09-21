@@ -24,6 +24,7 @@ HEADERS = %{
 
 #include "yepCore.h"
 #include "yepLibrary.h"
+#include "yepMath.h"
 }.strip.freeze
 
 PRIMARY = %{
@@ -431,6 +432,55 @@ SUMS = %w{Sum SumAbs SumSquares}.map do |kind|
   }.strip
 end.join("\n\n").freeze
 
+MATHS_KINDS = %w{Log Exp Sin Cos Tan}.freeze
+MATHS = MATHS_KINDS.map do |kind|
+  %{
+    static VALUE #{kind.downcase}_v64f_v64f(VALUE self, VALUE x) {
+      enum YepStatus status;
+      long i;
+      long l = RARRAY_LEN(x);
+      VALUE *x_a = RARRAY_PTR(x);
+      VALUE new_ary;
+
+      Yep64f *yep_x = (Yep64f*)calloc(l, sizeof(Yep64f));
+      Yep64f *yep_y = (Yep64f*)calloc(l, sizeof(Yep64f));
+      assert(yep_x != NULL);
+      assert(yep_y != NULL);
+
+      /* Initialize the Yeppp! library */
+      status = yepLibrary_Init();
+      assert(status == YepStatusOk);
+
+      /* Load x_a into yep_x. */
+      for (i=0; i<l; i++) {
+        if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_FLOAT) {
+          rb_raise(rb_eTypeError, "input was not all integers and floats");
+        }
+        yep_x[i] = (Yep64f)NUM2DBL(x_a[i]);
+      }
+
+      /* Perform the operation */
+      status = yepMath_#{kind}_V64f_V64f(yep_x, yep_y, (YepSize)l);
+      assert(status == YepStatusOk);
+
+      /* Load the Ruby Array */
+      new_ary = rb_ary_new2(l);
+      for (i=0; i<l; i++) {
+        rb_ary_push(new_ary, DBL2NUM((double)yep_y[i]));
+      }
+
+      /* Deinitialize the Yeppp! library */
+      status = yepLibrary_Release();
+      assert(status == YepStatusOk);
+    
+      /* Release the memory allocated for array */
+      free(yep_x);
+      free(yep_y);
+      return new_ary;
+    }
+  }.strip
+end.join("\n\n").freeze
+  
 INITIALIZER = %{
 // The initialization method for this module
 void Init_ryeppp() {
@@ -488,5 +538,10 @@ void Init_ryeppp() {
   // Signed abs sum is not available.
   rb_define_singleton_method(cRyeppp, "sumsquares_v64f_s64f", sumsquares_v64f_s64f, 1);
   // Signed squares sum is not available.
+
+  /* Maths */
+  #{MATHS_KINDS.map do |kind|
+    %{rb_define_singleton_method(cRyeppp, "#{kind.downcase}_v64f_v64f", #{kind.downcase}_v64f_v64f, 1);}
+  end.join("\n")}
 }
 }.strip.freeze

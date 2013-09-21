@@ -27,6 +27,7 @@ task :c_generation do
     CONSTANT_MIN_MAX,
     NEGATE,
     SUMS,
+    MATHS,
     INITIALIZER
   ].join("\n\n")
   File.open(File.join(current_dir, 'ext/ryeppp/ryeppp.c'), 'w') do |f|

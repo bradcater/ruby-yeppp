@@ -75,9 +75,21 @@ The Ryeppp gem provides a single class `Ryeppp` with the following methods:
 * `evaluatepolynomial_v64fv64f_v64f` - evaluate the polynomial with the given
   float coefficients in standard form at the given _x_-values
 
+## Benchmarks
+
+Since Yeppp! depends on your processor, using the library may or may not
+provide performance improvements, so it's important to benchmark your code on
+your own processor. A few [benchmarks](http://www.yeppp.info/benchmarks.html)
+are provided, and the [examples](http://docs.yeppp.info/c/examples.html) also
+provide performance comparisons.
+
+To run the benchmarks, simply run
+
+    $ ruby lib/ryeppp/bench.rb
+
 ## TODO
 
-Add benchmarks.
+Add more benchmarks.
 
 ## Contributing
 

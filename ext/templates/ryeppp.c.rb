@@ -1,3 +1,12 @@
+MAX_SIGNED_INTEGER = 2**63 - 1
+MIN_SIGNED_INTEGER = -1 * MAX_SIGNED_INTEGER
+
+class String
+  def pluralize
+    "#{self}#{self.size > 0 && self[-1] == 'e' ? 's' : 'es'}"
+  end
+end
+
 def allocate_yep64_typed_array_and_assert(var_names, len_var_name, opts={})
   var_names = Array(var_names)
   type = opts[:type] || '{{type}}'
@@ -18,11 +27,20 @@ def initialize_yeppp
     assert(status == YepStatusOk);}
 end
 
+def guard_integer_input_size(var_name, iteration_var_name)
+  %{if (rb_funcall(#{var_name}_a[#{iteration_var_name}], '>', 1, #{MAX_SIGNED_INTEGER})) {
+      rb_raise(rb_eRangeError, "input was too large for 64-bit signed integer");
+    }
+    if (rb_funcall(#{var_name}_a[#{iteration_var_name}], '<', 1, #{MIN_SIGNED_INTEGER})) {
+      rb_raise(rb_eRangeError, "input was too small for 64-bit signed integer");
+    }}
+end
+
 def load_ruby_array_from_yeppp_array(var_name, iteration_var_name, len_var_name, type)
   %{/* Load the Ruby Array */
     new_ary = rb_ary_new2(#{len_var_name});
     for (#{iteration_var_name}=0; #{iteration_var_name}<#{len_var_name}; #{iteration_var_name}++) {
-      rb_ary_push(new_ary, #{type == 'f' ? 'DBL' : 'INT'}2NUM((#{type == 'f' ? 'double' : 'long'})yep_#{var_name}[#{iteration_var_name}]));
+      rb_ary_push(new_ary, #{type == 'f' ? 'DBL' : 'LONG'}2NUM((#{type == 'f' ? 'double' : 'long'})yep_#{var_name}[#{iteration_var_name}]));
     }}
 end
 def load_ruby_array_from_yeppp_array_parameterized(var_name, iteration_var_name, len_var_name)
@@ -38,7 +56,7 @@ def load_ruby_array_into_yeppp_array(var_name, iteration_var_name, len_var_name,
       when :float
         "TYPE(#{var_name}_a[#{iteration_var_name}]) != T_FLOAT"
       when :integer
-        "TYPE(#{var_name}_a[#{iteration_var_name}]) != T_FIXNUM"
+        "TYPE(#{var_name}_a[#{iteration_var_name}]) != T_FIXNUM && TYPE(#{var_name}_a[#{iteration_var_name}]) != T_BIGNUM"
       else
         raise "Invalid permitted_type: #{t}."
     end
@@ -46,17 +64,19 @@ def load_ruby_array_into_yeppp_array(var_name, iteration_var_name, len_var_name,
   %{/* Load #{var_name}_a into yep_#{var_name}. */
     for (#{iteration_var_name}=0; #{iteration_var_name}<#{len_var_name}; #{iteration_var_name}++) {
       if (#{pt}) {
-        rb_raise(rb_eTypeError, "input was not all #{permitted_types.map(&:to_s).join(' and ')}");
+        rb_raise(rb_eTypeError, "input was not all #{permitted_types.map(&:to_s).map(&:pluralize).join(' and ')}");
       }
-      yep_#{var_name}[#{iteration_var_name}] = (Yep64#{type})NUM2#{type == 'f' ? 'DBL' : 'INT'}(#{var_name}_a[#{iteration_var_name}]);
+      #{guard_integer_input_size(var_name, iteration_var_name)}
+      yep_#{var_name}[#{iteration_var_name}] = (Yep64#{type})NUM2#{type == 'f' ? 'DBL' : 'LONG'}(#{var_name}_a[#{iteration_var_name}]);
     }}
 end
 def load_ruby_array_into_yeppp_array_parameterized(var_name, iteration_var_name, len_var_name)
   %{/* Load #{var_name}_a into yep_#{var_name}. */
     for (#{iteration_var_name}=0; #{iteration_var_name}<#{len_var_name}; #{iteration_var_name}++) {
-      if (TYPE(#{var_name}_a[#{iteration_var_name}]) != {{ruby_klass}}) {
+      if (TYPE(#{var_name}_a[#{iteration_var_name}]) != {{ruby_klass}} && TYPE(#{var_name}_a[#{iteration_var_name}]) != {{alt_ruby_klass}}) {
         rb_raise(rb_eTypeError, "input was not all {{ruby_klass_human}}");
       }
+      #{guard_integer_input_size(var_name, iteration_var_name)}
       yep_#{var_name}[#{iteration_var_name}] = (Yep64{{type}})NUM2{{ruby_type}}(#{var_name}_a[#{iteration_var_name}]);
     }}
 end
@@ -69,14 +89,15 @@ end
 
 def typed_variants(s, opts={})
   [
-    ['s', 'long', 'INT', 'T_FIXNUM', 'integers'],
-    ['f', 'double', 'DBL', 'T_FLOAT', 'floats']
-  ].map do |(type, c_type, ruby_type, ruby_klass, ruby_klass_human)|
+    ['s', 'long', 'LONG', 'T_FIXNUM', 'T_BIGNUM', 'integers'],
+    ['f', 'double', 'DBL', 'T_FLOAT', 'T_FLOAT', 'floats']
+  ].map do |(type, c_type, ruby_type, ruby_klass, alt_ruby_klass, ruby_klass_human)|
     if !opts[:only_type] || opts[:only_type] == type
       s.gsub(/{{type}}/, type)
        .gsub(/{{c_type}}/, c_type)
        .gsub(/{{ruby_type}}/, ruby_type)
        .gsub(/{{ruby_klass}}/, ruby_klass)
+       .gsub(/{{alt_ruby_klass}}/, alt_ruby_klass)
        .gsub(/{{ruby_klass_human}}/, ruby_klass_human)
     else
       ''
@@ -88,7 +109,6 @@ HEADERS = %{
 // Include the Ruby headers and goodies
 #include "ruby.h"
 
-#include "stdio.h"
 #include "assert.h"
 
 #include "yepCore.h"

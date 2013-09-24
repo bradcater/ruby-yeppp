@@ -30,7 +30,7 @@ class Array
       
         long i;
         for (i=0; i<n; i++) {
-          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_FLOAT) {
+          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
             rb_raise(rb_eTypeError, "input was not all integers and floats");
           }
           sum += NUM2DBL(x_a[i]);
@@ -49,7 +49,7 @@ class Array
       
         long i;
         for (i=0; i<n; i++) {
-          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_FLOAT) {
+          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
             rb_raise(rb_eTypeError, "input was not all integers and floats");
           }
           sum += (NUM2DBL(x_a[i]) < 0) ? (-1.0 * NUM2DBL(x_a[i])) : NUM2DBL(x_a[i]);
@@ -68,7 +68,7 @@ class Array
       
         long i;
         for (i=0; i<n; i++) {
-          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_FLOAT) {
+          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
             rb_raise(rb_eTypeError, "input was not all integers and floats");
           }
           sum += NUM2DBL(x_a[i]) * NUM2DBL(x_a[i]);
@@ -94,10 +94,10 @@ class Array
       
         long i;
         for (i=0; i<n; i++) {
-          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_FLOAT) {
+          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
             rb_raise(rb_eTypeError, "input was not all integers and floats");
           }
-          if (TYPE(y_a[i]) != T_FIXNUM && TYPE(y_a[i]) != T_FLOAT) {
+          if (TYPE(y_a[i]) != T_FIXNUM && TYPE(y_a[i]) != T_BIGNUM && TYPE(y_a[i]) != T_FLOAT) {
             rb_raise(rb_eTypeError, "input was not all integers and floats");
           }
           sum += NUM2DBL(x_a[i]) * NUM2DBL(y_a[i]);
@@ -138,7 +138,7 @@ class Array
       
         long i;
         for (i=0; i<n; i++) {
-          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_FLOAT) {
+          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
             rb_raise(rb_eTypeError, "input was not all integers and floats");
           }
         }
@@ -158,7 +158,7 @@ class Array
       
         long i;
         for (i=0; i<n; i++) {
-          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_FLOAT) {
+          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
             rb_raise(rb_eTypeError, "input was not all integers and floats");
           }
           res += NUM2DBL(x_a[i]) * pow(x, (n - 1 - i));
@@ -219,6 +219,9 @@ if VERBOSE
   puts "c_evaluate_polynomial: #{P_SMALL.c_evaluate_polynomial(X)}"
   puts "c_evaluate_polynomial_iter: #{P_SMALL.c_evaluate_polynomial_iter(X)}"
   puts "Ryeppp.evaluatepolynomial_v64fv64f_v64f: #{Ryeppp.evaluatepolynomial_v64fv64f_v64f(P_SMALL, [X])}"
+  puts "evaluate_polynomial_iter: #{P_LARGE.evaluate_polynomial_iter(X)}"
+  puts "c_evaluate_polynomial_iter: #{P_LARGE.c_evaluate_polynomial_iter(X)}"
+  puts "Ryeppp.evaluatepolynomial_v64fv64f_v64f: #{Ryeppp.evaluatepolynomial_v64fv64f_v64f(P_LARGE, [X])}"
 end
 Benchmark.bm(WIDTH) do |x|
   x.report("evaluate_polynomial:")                     { n.times { P_SMALL.evaluate_polynomial(X) } }

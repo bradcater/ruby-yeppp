@@ -5,6 +5,8 @@ describe Ryeppp do
   it 'should add vectors of Fixnums' do
     Ryeppp.add_v64sv64s_v64s([1], [2]).should eq([3])
     expect{Ryeppp.add_v64sv64s_v64s([1, 'a'], [2, 'b'])}.to raise_error(TypeError)
+    expect{Ryeppp.add_v64sv64s_v64s([2**63], [1])}.to raise_error(RangeError)
+    expect{Ryeppp.add_v64sv64s_v64s([-2**63], [1])}.to raise_error(RangeError)
   end
   it 'should add vectors of Floats' do
     Ryeppp.add_v64fv64f_v64f([1.1], [1.1]).should eq([2.2])
@@ -15,6 +17,8 @@ describe Ryeppp do
   it 'should subtract vectors of Fixnums' do
     Ryeppp.subtract_v64sv64s_v64s([1], [2]).should eq([-1])
     expect{Ryeppp.subtract_v64sv64s_v64s([1, 'a'], [2, 'b'])}.to raise_error(TypeError)
+    expect{Ryeppp.subtract_v64sv64s_v64s([2**63], [2])}.to raise_error(RangeError)
+    expect{Ryeppp.subtract_v64sv64s_v64s([-2**63], [2])}.to raise_error(RangeError)
   end
   it 'should subtract vectors of Floats' do
     Ryeppp.subtract_v64fv64f_v64f([1.1], [1.1]).should eq([0])
@@ -25,6 +29,8 @@ describe Ryeppp do
   it 'should multiply a vector of Fixnums by a constant' do
     Ryeppp.multiply_v64ss64s_v64s([1, 2, 3], 2).should eq([2, 4, 6])
     expect{Ryeppp.multiply_v64ss64s_v64s([1, 'a'], 2)}.to raise_error(TypeError)
+    expect{Ryeppp.multiply_v64ss64s_v64s([2**63], 2)}.to raise_error(RangeError)
+    expect{Ryeppp.multiply_v64ss64s_v64s([-2**63], 2)}.to raise_error(RangeError)
   end
   it 'should multiply a vector of Floats by a constant' do
     Ryeppp.multiply_v64fs64f_v64f([1.0, 2.0, 3.0], 2.0).should eq([2.0, 4.0, 6.0])
@@ -33,6 +39,8 @@ describe Ryeppp do
   it 'should multiply vectors of Fixnums' do
     Ryeppp.multiply_v64sv64s_v64s([2], [3]).should eq([6])
     expect{Ryeppp.multiply_v64sv64s_v64s([1, 'a'], [2, 'b'])}.to raise_error(TypeError)
+    expect{Ryeppp.multiply_v64sv64s_v64s([2**63], [2])}.to raise_error(RangeError)
+    expect{Ryeppp.multiply_v64sv64s_v64s([-2**63], [2])}.to raise_error(RangeError)
   end
   it 'should multiply vectors of Floats' do
     Ryeppp.multiply_v64fv64f_v64f([2.5], [3.5]).should eq([8.75])
@@ -40,7 +48,7 @@ describe Ryeppp do
   end
 
   # Dot Product
-  it 'should do the dot product of vectors' do
+  it 'should do the dot product of vectors of Floats' do
     Ryeppp.dotproduct_v64fv64f_s64f([1, 2, 3], [4, 5, 6]).should eq(32.0)
     expect{Ryeppp.dotproduct_v64fv64f_s64f([1, 2, 'a'], [4, 5, 'b'])}.to raise_error(TypeError)
   end
@@ -49,6 +57,8 @@ describe Ryeppp do
   it 'should find the minimum in a vector of Fixnums' do
     Ryeppp.min_v64s_s64s([3, 2, 1]).should eq(1)
     expect{Ryeppp.min_v64s_s64s([1, 'a'])}.to raise_error(TypeError)
+    expect{Ryeppp.min_v64s_s64s([2**63])}.to raise_error(RangeError)
+    expect{Ryeppp.min_v64s_s64s([-2**63])}.to raise_error(RangeError)
   end
   it 'should find the minimum in a vector of Floats' do
     Ryeppp.min_v64f_s64f([1.0, 2.0, 3.0]).should eq(1.0)
@@ -59,6 +69,8 @@ describe Ryeppp do
   it 'should find the maximum in a vector of Fixnums' do
     Ryeppp.max_v64s_s64s([3, 2, 1]).should eq(3)
     expect{Ryeppp.max_v64s_s64s([1, 'a'])}.to raise_error(TypeError)
+    expect{Ryeppp.max_v64s_s64s([2**63])}.to raise_error(RangeError)
+    expect{Ryeppp.max_v64s_s64s([-2**63])}.to raise_error(RangeError)
   end
   it 'should find the maximum in a vector of Floats' do
     Ryeppp.max_v64f_s64f([1.0, 2.0, 3.0]).should eq(3.0)
@@ -91,6 +103,8 @@ describe Ryeppp do
   it 'should negate vectors of Fixnums' do
     Ryeppp.negate_v64s_s64s([1]).should eq([-1])
     expect{Ryeppp.negate_v64s_s64s([1, 'a'])}.to raise_error(TypeError)
+    expect{Ryeppp.negate_v64s_s64s([2**63])}.to raise_error(RangeError)
+    expect{Ryeppp.negate_v64s_s64s([-2**63])}.to raise_error(RangeError)
   end
   it 'should negate vectors of Floats' do
     Ryeppp.negate_v64f_s64f([1.1]).should eq([-1.1])
@@ -98,49 +112,49 @@ describe Ryeppp do
   end
 
   # Sum
-  it 'should sum a vector' do
+  it 'should sum a vector of Floats' do
     Ryeppp.sum_v64f_s64f([1, 2, 3]).should eq(6.0)
     expect{Ryeppp.sum_v64f_s64f([1, 'a'])}.to raise_error(TypeError)
   end
   # Sum Absolute Values
-  it 'should sum absolute values of a vector' do
+  it 'should sum absolute values of a vector of Floats' do
     Ryeppp.sumabs_v64f_s64f([1.0, -1.0, 2.0]).should eq(4.0)
     expect{Ryeppp.sumabs_v64f_s64f([1.0, -1.0, 'a'])}.to raise_error(TypeError)
   end
   # Sum Square Values
-  it 'should sum square values of a vector' do
+  it 'should sum square values of a vector of Floats' do
     Ryeppp.sumsquares_v64f_s64f([1.0, -1.0, 2.0]).should eq(6.0)
     expect{Ryeppp.sumsquares_v64f_s64f([1.0, -1.0, 'a'])}.to raise_error(TypeError)
   end
 
   # Log
-  it 'should find the natural logarithm of elements of a vector' do
+  it 'should find the natural logarithm of elements of a vector of Floats' do
     Ryeppp.log_v64f_v64f([1.0, 2.0, 3.0]).map{|o| o.round(5)}.should eq([0.0, 0.69315, 1.09861])
     expect{Ryeppp.log_v64f_v64f([1.0, 'a'])}.to raise_error(TypeError)
   end
   # Exp
-  it 'should find the base e exponent of elements of a vector' do
+  it 'should find the base e exponent of elements of a vector of Floats' do
     Ryeppp.exp_v64f_v64f([1.0, 2.0, 3.0]).map{|o| o.round(5)}.should eq([2.71828, 7.38906, 20.08554])
     expect{Ryeppp.exp_v64f_v64f([1.0, 'a'])}.to raise_error(TypeError)
   end
   # Sin
-  it 'should find the sine of elements of a vector' do
+  it 'should find the sine of elements of a vector of Floats' do
     Ryeppp.sin_v64f_v64f([1.0, 2.0, 3.0]).map{|o| o.round(5)}.should eq([0.84147, 0.9093, 0.14112])
     expect{Ryeppp.sin_v64f_v64f([1.0, 'a'])}.to raise_error(TypeError)
   end
   # Cos
-  it 'should find the cosine of elements of a vector' do
+  it 'should find the cosine of elements of a vector of Floats' do
     Ryeppp.cos_v64f_v64f([1.0, 2.0, 3.0]).map{|o| o.round(5)}.should eq([0.5403, -0.41615, -0.98999])
     expect{Ryeppp.cos_v64f_v64f([1.0, 'a'])}.to raise_error(TypeError)
   end
   # Tan
-  it 'should find the tangent of elements of a vector' do
+  it 'should find the tangent of elements of a vector of Floats' do
     Ryeppp.tan_v64f_v64f([1.0, 2.0, 3.0]).map{|o| o.round(5)}.should eq([1.55741, -2.18504, -0.14255])
     expect{Ryeppp.tan_v64f_v64f([1.0, 'a'])}.to raise_error(TypeError)
   end
 
   # Polynomial
-  it 'should evaluate a polynomial for a vector' do
+  it 'should evaluate a polynomial for a vector of Floats' do
     # x^2 + x + 1
     # evaluated at x=1.
     Ryeppp.evaluatepolynomial_v64fv64f_v64f([1.0, 1.0, 1.0], [1.0]).should eq([3.0])

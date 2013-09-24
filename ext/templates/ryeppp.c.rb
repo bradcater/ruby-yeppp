@@ -7,12 +7,18 @@ class String
   end
 end
 
-def allocate_yep64_typed_array_and_assert(var_names, len_var_name, opts={})
+def declare_yep64_typed_array(var_names, opts={})
   var_names = Array(var_names)
   type = opts[:type] || '{{type}}'
-  assert = opts[:assert].nil? ? true : opts[:assert]
-  %{#{var_names.map{|vn| %{Yep64#{type} *yep_#{vn} = (Yep64#{type}*)calloc(#{len_var_name}, sizeof(Yep64#{type}));}}.join("\n")}
-    #{assert ? var_names.map{|vn| %{assert(yep_#{vn} != NULL);}}.join("\n") : nil}}
+  var_names.map{|vn| %{Yep64#{type} *yep_#{vn};}}.join("\n")
+end
+def allocate_yep64_typed_array(var_names, len_var_name, opts={})
+  var_names = Array(var_names)
+  type = opts[:type] || '{{type}}'
+  var_names.map{|vn| %{
+    yep_#{vn} = (Yep64#{type}*)calloc(#{len_var_name}, sizeof(Yep64#{type}));
+    assert(yep_#{vn} != NULL);
+  }}.join("\n")
 end
 
 def deinitialize_yeppp
@@ -27,11 +33,13 @@ def initialize_yeppp
     assert(status == YepStatusOk);}
 end
 
-def guard_integer_input_size(var_name, iteration_var_name)
+def guard_integer_input_size(var_name, iteration_var_name, allocated_arrays)
   %{if (rb_funcall(#{var_name}_a[#{iteration_var_name}], '>', 1, #{MAX_SIGNED_INTEGER})) {
+      #{release_array_memory allocated_arrays}
       rb_raise(rb_eRangeError, "input was too large for 64-bit signed integer");
     }
     if (rb_funcall(#{var_name}_a[#{iteration_var_name}], '<', 1, #{MIN_SIGNED_INTEGER})) {
+      #{release_array_memory allocated_arrays}
       rb_raise(rb_eRangeError, "input was too small for 64-bit signed integer");
     }}
 end
@@ -64,19 +72,21 @@ def load_ruby_array_into_yeppp_array(var_name, iteration_var_name, len_var_name,
   %{/* Load #{var_name}_a into yep_#{var_name}. */
     for (#{iteration_var_name}=0; #{iteration_var_name}<#{len_var_name}; #{iteration_var_name}++) {
       if (#{pt}) {
+        #{release_array_memory opts[:allocated_arrays]}
         rb_raise(rb_eTypeError, "input was not all #{permitted_types.map(&:to_s).map(&:pluralize).join(' and ')}");
       }
-      #{guard_integer_input_size(var_name, iteration_var_name)}
+      #{guard_integer_input_size(var_name, iteration_var_name, opts[:allocated_arrays])}
       yep_#{var_name}[#{opts[:reverse] ? "#{len_var_name} - #{iteration_var_name} - 1" : iteration_var_name}] = (Yep64#{type})NUM2#{type == 'f' ? 'DBL' : 'LONG'}(#{var_name}_a[#{iteration_var_name}]);
     }}
 end
-def load_ruby_array_into_yeppp_array_parameterized(var_name, iteration_var_name, len_var_name)
+def load_ruby_array_into_yeppp_array_parameterized(var_name, iteration_var_name, len_var_name, opts={})
   %{/* Load #{var_name}_a into yep_#{var_name}. */
     for (#{iteration_var_name}=0; #{iteration_var_name}<#{len_var_name}; #{iteration_var_name}++) {
       if (TYPE(#{var_name}_a[#{iteration_var_name}]) != {{ruby_klass}} && TYPE(#{var_name}_a[#{iteration_var_name}]) != {{alt_ruby_klass}}) {
+        #{release_array_memory opts[:allocated_arrays]}
         rb_raise(rb_eTypeError, "input was not all {{ruby_klass_human}}");
       }
-      #{guard_integer_input_size(var_name, iteration_var_name)}
+      #{guard_integer_input_size(var_name, iteration_var_name, opts[:allocated_arrays])}
       yep_#{var_name}[#{iteration_var_name}] = (Yep64{{type}})NUM2{{ruby_type}}(#{var_name}_a[#{iteration_var_name}]);
     }}
 end
@@ -130,16 +140,28 @@ FUNCS = Proc.new do |verb_name|
           enum YepStatus status;
           long i;
           VALUE new_ary;
-          VALUE *x_a = RARRAY_PTR(x);
-          long l = RARRAY_LEN(x);
-          Yep64{{type}} mult_by = (Yep64{{type}})NUM2DBL(multiply_by);
+          VALUE *x_a;
+          long l;
+          Yep64{{type}} mult_by;
+          #{declare_yep64_typed_array(%w{x y})}
         
+          if (TYPE(x) != T_ARRAY) {
+            rb_raise(rb_eArgError, "first argument was not an Array");
+          }
+          if (TYPE(multiply_by) != T_FIXNUM && TYPE(multiply_by) != T_BIGNUM && TYPE(multiply_by) != T_FLOAT) {
+            rb_raise(rb_eArgError, "second argument was not an integer or a float");
+          }
+
           /* Allocate arrays of inputs and outputs */
-          #{allocate_yep64_typed_array_and_assert(%w{x y}, 'l')}
-        
+          #{allocate_yep64_typed_array(%w{x y}, 'l')}
+          
+          x_a = RARRAY_PTR(x);
+          l = RARRAY_LEN(x);
+          mult_by = (Yep64{{type}})NUM2DBL(multiply_by);
+
           #{initialize_yeppp}
         
-          #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l')}
+          #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x y})}
         
           /* Perform the operation */
           status = yepCore_Multiply_V64{{type}}S64{{type}}_V64{{type}}(yep_x, mult_by, yep_y, (YepSize)l);
@@ -163,19 +185,31 @@ FUNCS = Proc.new do |verb_name|
       enum YepStatus status;
       VALUE new_ary;
       long i;
-      VALUE *x_a = RARRAY_PTR(x);
-      VALUE *y_a = RARRAY_PTR(y);
-      long l = RARRAY_LEN(x);
+      VALUE *x_a;
+      VALUE *y_a;
+      long l;
+      #{declare_yep64_typed_array(%w{x y z})}
     
+      if (TYPE(x) != T_ARRAY) {
+        rb_raise(rb_eArgError, "first argument was not an Array");
+      }
+      if (TYPE(y) != T_ARRAY) {
+        rb_raise(rb_eArgError, "second argument was not an Array");
+      }
+
+      x_a = RARRAY_PTR(x);
+      y_a = RARRAY_PTR(y);
+      l = RARRAY_LEN(x);
+
       /* Allocate arrays of inputs and outputs */
-      #{allocate_yep64_typed_array_and_assert(%w{x y z}, 'l')}
+      #{allocate_yep64_typed_array(%w{x y z}, 'l')}
 
       #{initialize_yeppp}
     
-      #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l')}
-      #{load_ruby_array_into_yeppp_array_parameterized('y', 'i', 'l')}
+      #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x y z})}
+      #{load_ruby_array_into_yeppp_array_parameterized('y', 'i', 'l', :allocated_arrays => %w{x y z})}
     
-      /* Perform the addition */
+      /* Perform the #{verb_name} */
       status = yepCore_#{verb_name}_V64{{type}}V64{{type}}_V64{{type}}(yep_x, yep_y, yep_z, (YepSize)l);
       assert(status == YepStatusOk);
 
@@ -197,17 +231,29 @@ DOT_PRODUCT = %{
     enum YepStatus status;
     long i;
     Yep64f dp;
-    VALUE *x_a = RARRAY_PTR(x);
-    VALUE *y_a = RARRAY_PTR(y);
-    long l = RARRAY_LEN(x);
+    VALUE *x_a;
+    VALUE *y_a;
+    long l;
+    #{declare_yep64_typed_array(%w{x y}, :type => 'f')}
   
+    if (TYPE(x) != T_ARRAY) {
+      rb_raise(rb_eArgError, "first argument was not an Array");
+    }
+    if (TYPE(y) != T_ARRAY) {
+      rb_raise(rb_eArgError, "second argument was not an Array");
+    }
+
+    x_a = RARRAY_PTR(x);
+    y_a = RARRAY_PTR(y);
+    l = RARRAY_LEN(x);
+
     /* Allocate arrays of inputs and outputs */
-    #{allocate_yep64_typed_array_and_assert(%w{x y}, 'l', :type => 'f')}
+    #{allocate_yep64_typed_array(%w{x y}, 'l', :type => 'f')}
 
     #{initialize_yeppp}
   
-    #{load_ruby_array_into_yeppp_array('x', 'i', 'l', 'f', [:integer, :float])}
-    #{load_ruby_array_into_yeppp_array('y', 'i', 'l', 'f', [:integer, :float])}
+    #{load_ruby_array_into_yeppp_array('x', 'i', 'l', 'f', [:integer, :float], :allocated_arrays => %w{x y})}
+    #{load_ruby_array_into_yeppp_array('y', 'i', 'l', 'f', [:integer, :float], :allocated_arrays => %w{x y})}
   
     /* Perform the operation */
     status = yepCore_DotProduct_V64fV64f_S64f(yep_x, yep_y, &dp, (YepSize)l);
@@ -228,15 +274,23 @@ MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
       enum YepStatus status;
       long i;
       Yep64{{type}} #{kind.downcase};
-      VALUE *x_a = RARRAY_PTR(x);
-      long l = RARRAY_LEN(x);
-  
+      VALUE *x_a;
+      long l;
+      #{declare_yep64_typed_array(%w{x})}
+
+      if (TYPE(x) != T_ARRAY) {
+        rb_raise(rb_eArgError, "first argument was not an Array");
+      }
+
+      x_a = RARRAY_PTR(x);
+      l = RARRAY_LEN(x);
+
       /* Allocate arrays of inputs and outputs */
-      #{allocate_yep64_typed_array_and_assert('x', 'l')}
+      #{allocate_yep64_typed_array('x', 'l')}
 
       #{initialize_yeppp}
   
-      #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l')}
+      #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x})}
   
       /* Perform the operation */
       status = yepCore_#{kind}_V64{{type}}_S64{{type}}(yep_x, &#{kind.downcase}, (YepSize)l);
@@ -258,17 +312,29 @@ PAIRWISE_MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
       enum YepStatus status;
       long i;
       VALUE new_ary;
-      VALUE *x_a = RARRAY_PTR(x);
-      VALUE *y_a = RARRAY_PTR(y);
-      long l = RARRAY_LEN(x);
-  
+      VALUE *x_a;
+      VALUE *y_a;
+      long l;
+      #{declare_yep64_typed_array(%w{x y z})}
+      
+      if (TYPE(x) != T_ARRAY) {
+        rb_raise(rb_eArgError, "first argument was not an Array");
+      }
+      if (TYPE(y) != T_ARRAY) {
+        rb_raise(rb_eArgError, "second argument was not an Array");
+      }
+
+      x_a = RARRAY_PTR(x);
+      y_a = RARRAY_PTR(y);
+      l = RARRAY_LEN(x);
+
       /* Allocate arrays of inputs and outputs */
-      #{allocate_yep64_typed_array_and_assert(%w{x y z}, 'l')}
+      #{allocate_yep64_typed_array(%w{x y z}, 'l')}
 
       #{initialize_yeppp}
   
-      #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l')}
-      #{load_ruby_array_into_yeppp_array_parameterized('y', 'i', 'l')}
+      #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x y z})}
+      #{load_ruby_array_into_yeppp_array_parameterized('y', 'i', 'l', :allocated_arrays => %w{x y z})}
   
       /* Perform the operation */
       status = yepCore_#{kind}_V64{{type}}V64{{type}}_V64{{type}}(yep_x, yep_y, yep_z, (YepSize)l);
@@ -292,16 +358,28 @@ CONSTANT_MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
       enum YepStatus status;
       long i;
       VALUE new_ary;
-      VALUE *x_a = RARRAY_PTR(x);
-      long l = RARRAY_LEN(x);
-      Yep64f konst = (Yep64f)NUM2{{ruby_type}}(c);
+      VALUE *x_a;
+      long l;
+      Yep64f konst;
+      #{declare_yep64_typed_array(%w{x y})}
   
+      if (TYPE(x) != T_ARRAY) {
+        rb_raise(rb_eArgError, "first argument was not an Array");
+      }
+      if (TYPE(c) != T_FIXNUM && TYPE(c) != T_BIGNUM && TYPE(c) != T_FLOAT) {
+        rb_raise(rb_eArgError, "second argument was not a number");
+      }
+
+      x_a = RARRAY_PTR(x);
+      l = RARRAY_LEN(x);
+      konst = (Yep64f)NUM2{{ruby_type}}(c);
+
       /* Allocate arrays of inputs and outputs */
-      #{allocate_yep64_typed_array_and_assert(%w{x y}, 'l')}
+      #{allocate_yep64_typed_array(%w{x y}, 'l')}
 
       #{initialize_yeppp}
   
-      #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l')}
+      #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x y})}
   
       /* Perform the operation */
       status = yepCore_#{kind}_V64{{type}}S64{{type}}_V64{{type}}(yep_x, konst, yep_y, (YepSize)l);
@@ -324,15 +402,23 @@ NEGATE = typed_variants(%{
     enum YepStatus status;
     long i;
     VALUE new_ary;
-    VALUE *x_a = RARRAY_PTR(x);
-    long l = RARRAY_LEN(x);
-  
+    VALUE *x_a;
+    long l;
+    #{declare_yep64_typed_array(%w{x y})}
+
+    if (TYPE(x) != T_ARRAY) {
+      rb_raise(rb_eArgError, "first argument was not an Array");
+    }
+
+    x_a = RARRAY_PTR(x);
+    l = RARRAY_LEN(x);
+
     /* Allocate arrays of inputs and outputs */
-    #{allocate_yep64_typed_array_and_assert(%w{x y}, 'l')}
+    #{allocate_yep64_typed_array(%w{x y}, 'l')}
   
     #{initialize_yeppp}
   
-    #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l')}
+    #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x y})}
   
     /* Perform the negation */
     status = yepCore_Negate_V64{{type}}_V64{{type}}(yep_x, yep_y, (YepSize)l);
@@ -354,15 +440,23 @@ SUMS = %w{Sum SumAbs SumSquares}.map do |kind|
       enum YepStatus status;
       long i;
       Yep64f sum;
-      long l = RARRAY_LEN(x);
-      VALUE *x_a = RARRAY_PTR(x);
+      VALUE *x_a;
+      long l;
+      #{declare_yep64_typed_array(%w{x}, :type => 'f')}
+
+      if (TYPE(x) != T_ARRAY) {
+        rb_raise(rb_eArgError, "first argument was not an Array");
+      }
+
+      x_a = RARRAY_PTR(x);
+      l = RARRAY_LEN(x);
 
       /* Allocate arrays of inputs and outputs */
-      #{allocate_yep64_typed_array_and_assert('x', 'l', :type => 'f')}
+      #{allocate_yep64_typed_array('x', 'l', :type => 'f')}
 
       #{initialize_yeppp}
 
-      #{load_ruby_array_into_yeppp_array('x', 'i', 'l', 'f', [:integer, :float])}
+      #{load_ruby_array_into_yeppp_array('x', 'i', 'l', 'f', [:integer, :float], :allocated_arrays => %w{x})}
 
       /* Perform the operation */
       status = yepCore_#{kind}_V64f_S64f(yep_x, &sum, (YepSize)l);
@@ -384,15 +478,23 @@ MATHS = MATHS_KINDS.map do |kind|
       enum YepStatus status;
       long i;
       VALUE new_ary;
-      long l = RARRAY_LEN(x);
-      VALUE *x_a = RARRAY_PTR(x);
+      VALUE *x_a;
+      long l;
+      #{declare_yep64_typed_array(%w{x y}, :type => 'f')}
+
+      if (TYPE(x) != T_ARRAY) {
+        rb_raise(rb_eArgError, "first argument was not an Array");
+      }
+
+      x_a = RARRAY_PTR(x);
+      l = RARRAY_LEN(x);
 
       /* Allocate arrays of inputs and outputs */
-      #{allocate_yep64_typed_array_and_assert(%w{x y}, 'l', :type => 'f')}
+      #{allocate_yep64_typed_array(%w{x y}, 'l', :type => 'f')}
 
       #{initialize_yeppp}
 
-      #{load_ruby_array_into_yeppp_array('x', 'i', 'l', 'f', [:integer, :float])}
+      #{load_ruby_array_into_yeppp_array('x', 'i', 'l', 'f', [:integer, :float], :allocated_arrays => %w{x y})}
 
       /* Perform the operation */
       status = yepMath_#{kind}_V64f_V64f(yep_x, yep_y, (YepSize)l);
@@ -416,24 +518,34 @@ POLYNOMIAL = %{
     enum YepStatus status;
     long i;
     VALUE new_ary;
-    long x_l = RARRAY_LEN(x);
-    long y_l = RARRAY_LEN(where);
-    VALUE *x_a = RARRAY_PTR(x);
-    VALUE *y_a = RARRAY_PTR(where);
+    VALUE *x_a;
+    VALUE *y_a;
+    long x_l;
+    long y_l;
+    #{declare_yep64_typed_array(%w{x y z}, :type => 'f')}
+
+    if (TYPE(x) != T_ARRAY) {
+      rb_raise(rb_eArgError, "first argument was not an Array");
+    }
+    if (TYPE(where) != T_ARRAY) {
+      rb_raise(rb_eArgError, "second argument was not an Array");
+    }
+
+    x_a = RARRAY_PTR(x);
+    y_a = RARRAY_PTR(where);
+    x_l = RARRAY_LEN(x);
+    y_l = RARRAY_LEN(where);
 
     /* Allocate arrays of inputs and outputs */
-    #{allocate_yep64_typed_array_and_assert(%w{x}, 'x_l', :assert => false, :type => 'f')}
-    #{allocate_yep64_typed_array_and_assert(%w{y z}, 'y_l', :assert => false, :type => 'f')}
-    assert(yep_x != NULL);
-    assert(yep_y != NULL);
-    assert(yep_z != NULL);
+    #{allocate_yep64_typed_array(%w{x}, 'x_l', :type => 'f')}
+    #{allocate_yep64_typed_array(%w{y z}, 'y_l', :type => 'f')}
 
     #{initialize_yeppp}
 
     // Yeppp! polynomial evaluation works in reverse standard form, so we have
     // to load yep_x in reverse.
-    #{load_ruby_array_into_yeppp_array('x', 'i', 'x_l', 'f', [:integer, :float], :reverse => true)}
-    #{load_ruby_array_into_yeppp_array('y', 'i', 'y_l', 'f', [:integer, :float])}
+    #{load_ruby_array_into_yeppp_array('x', 'i', 'x_l', 'f', [:integer, :float], :reverse => true, :allocated_arrays => %w{x y z})}
+    #{load_ruby_array_into_yeppp_array('y', 'i', 'y_l', 'f', [:integer, :float], :allocated_arrays => %w{x y z})}
 
     /* Perform the operation */
     status = yepMath_EvaluatePolynomial_V64fV64f_V64f(yep_x, yep_y, yep_z, (YepSize)x_l, (YepSize)y_l);

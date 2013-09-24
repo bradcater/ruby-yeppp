@@ -160,7 +160,7 @@ describe Ryeppp do
     Ryeppp.evaluatepolynomial_v64fv64f_v64f([1.0, 1.0, 1.0], [1.0]).should eq([3.0])
     # -5x^3 - 4x^2 + 2x + 1
     # evaluated at x=0, x=1, and x=2.
-    Ryeppp.evaluatepolynomial_v64fv64f_v64f([-5, -4, 2, 1], [0, 1, 2]).should eq([-5.0, -6.0, 3.0])
+    Ryeppp.evaluatepolynomial_v64fv64f_v64f([-5, -4, 2, 1], [0, 1, 2]).should eq([1.0, -6.0, -51.0])
     expect{Ryeppp.evaluatepolynomial_v64fv64f_v64f([1, 'a'], [0, 1])}.to raise_error(TypeError)
   end
 end

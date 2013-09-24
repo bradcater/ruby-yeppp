@@ -50,7 +50,7 @@ def load_ruby_array_from_yeppp_array_parameterized(var_name, iteration_var_name,
       rb_ary_push(new_ary, {{ruby_type}}2NUM(({{c_type}})yep_#{var_name}[#{iteration_var_name}]));
     }}
 end
-def load_ruby_array_into_yeppp_array(var_name, iteration_var_name, len_var_name, type, permitted_types)
+def load_ruby_array_into_yeppp_array(var_name, iteration_var_name, len_var_name, type, permitted_types, opts={})
   pt = permitted_types.map do |t|
     case t
       when :float
@@ -67,7 +67,7 @@ def load_ruby_array_into_yeppp_array(var_name, iteration_var_name, len_var_name,
         rb_raise(rb_eTypeError, "input was not all #{permitted_types.map(&:to_s).map(&:pluralize).join(' and ')}");
       }
       #{guard_integer_input_size(var_name, iteration_var_name)}
-      yep_#{var_name}[#{iteration_var_name}] = (Yep64#{type})NUM2#{type == 'f' ? 'DBL' : 'LONG'}(#{var_name}_a[#{iteration_var_name}]);
+      yep_#{var_name}[#{opts[:reverse] ? "#{len_var_name} - #{iteration_var_name} - 1" : iteration_var_name}] = (Yep64#{type})NUM2#{type == 'f' ? 'DBL' : 'LONG'}(#{var_name}_a[#{iteration_var_name}]);
     }}
 end
 def load_ruby_array_into_yeppp_array_parameterized(var_name, iteration_var_name, len_var_name)
@@ -410,7 +410,7 @@ MATHS = MATHS_KINDS.map do |kind|
 end.join("\n\n").freeze
 
 POLYNOMIAL = %{
-  // x is the coefficients
+  // x is the coefficients in standard form
   // where is the set of points at which to evaluate x
   static VALUE evaluatepolynomial_v64fv64f_v64f(VALUE self, VALUE x, VALUE where) {
     enum YepStatus status;
@@ -430,7 +430,9 @@ POLYNOMIAL = %{
 
     #{initialize_yeppp}
 
-    #{load_ruby_array_into_yeppp_array('x', 'i', 'x_l', 'f', [:integer, :float])}
+    // Yeppp! polynomial evaluation works in reverse standard form, so we have
+    // to load yep_x in reverse.
+    #{load_ruby_array_into_yeppp_array('x', 'i', 'x_l', 'f', [:integer, :float], :reverse => true)}
     #{load_ruby_array_into_yeppp_array('y', 'i', 'y_l', 'f', [:integer, :float])}
 
     /* Perform the operation */

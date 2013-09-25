@@ -33,6 +33,12 @@ def initialize_yeppp
     assert(status == YepStatusOk);}
 end
 
+def ensure_array_argument(var_name, var_position)
+  %{if (TYPE(#{var_name}) != T_ARRAY) {
+    rb_raise(rb_eArgError, "#{var_position} argument was not an Array");
+  }}
+end
+
 def guard_integer_input_size(var_name, iteration_var_name, allocated_arrays)
   %{if (rb_funcall(#{var_name}_a[#{iteration_var_name}], '>', 1, #{MAX_SIGNED_INTEGER})) {
       #{release_array_memory allocated_arrays}
@@ -145,20 +151,18 @@ FUNCS = Proc.new do |verb_name|
           Yep64{{type}} mult_by;
           #{declare_yep64_typed_array(%w{x y})}
         
-          if (TYPE(x) != T_ARRAY) {
-            rb_raise(rb_eArgError, "first argument was not an Array");
-          }
+          #{ensure_array_argument('x', 'first')}
           if (TYPE(multiply_by) != T_FIXNUM && TYPE(multiply_by) != T_BIGNUM && TYPE(multiply_by) != T_FLOAT) {
             rb_raise(rb_eArgError, "second argument was not an integer or a float");
           }
 
-          /* Allocate arrays of inputs and outputs */
-          #{allocate_yep64_typed_array(%w{x y}, 'l')}
-          
           x_a = RARRAY_PTR(x);
           l = RARRAY_LEN(x);
           mult_by = (Yep64{{type}})NUM2DBL(multiply_by);
 
+          /* Allocate arrays of inputs and outputs */
+          #{allocate_yep64_typed_array(%w{x y}, 'l')}
+          
           #{initialize_yeppp}
         
           #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x y})}
@@ -190,12 +194,8 @@ FUNCS = Proc.new do |verb_name|
       long l;
       #{declare_yep64_typed_array(%w{x y z})}
     
-      if (TYPE(x) != T_ARRAY) {
-        rb_raise(rb_eArgError, "first argument was not an Array");
-      }
-      if (TYPE(y) != T_ARRAY) {
-        rb_raise(rb_eArgError, "second argument was not an Array");
-      }
+      #{ensure_array_argument('x', 'first')}
+      #{ensure_array_argument('y', 'second')}
 
       x_a = RARRAY_PTR(x);
       y_a = RARRAY_PTR(y);
@@ -236,12 +236,8 @@ DOT_PRODUCT = %{
     long l;
     #{declare_yep64_typed_array(%w{x y}, :type => 'f')}
   
-    if (TYPE(x) != T_ARRAY) {
-      rb_raise(rb_eArgError, "first argument was not an Array");
-    }
-    if (TYPE(y) != T_ARRAY) {
-      rb_raise(rb_eArgError, "second argument was not an Array");
-    }
+    #{ensure_array_argument('x', 'first')}
+    #{ensure_array_argument('y', 'second')}
 
     x_a = RARRAY_PTR(x);
     y_a = RARRAY_PTR(y);
@@ -278,9 +274,7 @@ MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
       long l;
       #{declare_yep64_typed_array(%w{x})}
 
-      if (TYPE(x) != T_ARRAY) {
-        rb_raise(rb_eArgError, "first argument was not an Array");
-      }
+      #{ensure_array_argument('x', 'first')}
 
       x_a = RARRAY_PTR(x);
       l = RARRAY_LEN(x);
@@ -317,12 +311,8 @@ PAIRWISE_MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
       long l;
       #{declare_yep64_typed_array(%w{x y z})}
       
-      if (TYPE(x) != T_ARRAY) {
-        rb_raise(rb_eArgError, "first argument was not an Array");
-      }
-      if (TYPE(y) != T_ARRAY) {
-        rb_raise(rb_eArgError, "second argument was not an Array");
-      }
+      #{ensure_array_argument('x', 'first')}
+      #{ensure_array_argument('y', 'second')}
 
       x_a = RARRAY_PTR(x);
       y_a = RARRAY_PTR(y);
@@ -363,9 +353,7 @@ CONSTANT_MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
       Yep64f konst;
       #{declare_yep64_typed_array(%w{x y})}
   
-      if (TYPE(x) != T_ARRAY) {
-        rb_raise(rb_eArgError, "first argument was not an Array");
-      }
+      #{ensure_array_argument('x', 'first')}
       if (TYPE(c) != T_FIXNUM && TYPE(c) != T_BIGNUM && TYPE(c) != T_FLOAT) {
         rb_raise(rb_eArgError, "second argument was not a number");
       }
@@ -406,9 +394,7 @@ NEGATE = typed_variants(%{
     long l;
     #{declare_yep64_typed_array(%w{x y})}
 
-    if (TYPE(x) != T_ARRAY) {
-      rb_raise(rb_eArgError, "first argument was not an Array");
-    }
+    #{ensure_array_argument('x', 'first')}
 
     x_a = RARRAY_PTR(x);
     l = RARRAY_LEN(x);
@@ -444,9 +430,7 @@ SUMS = %w{Sum SumAbs SumSquares}.map do |kind|
       long l;
       #{declare_yep64_typed_array(%w{x}, :type => 'f')}
 
-      if (TYPE(x) != T_ARRAY) {
-        rb_raise(rb_eArgError, "first argument was not an Array");
-      }
+      #{ensure_array_argument('x', 'first')}
 
       x_a = RARRAY_PTR(x);
       l = RARRAY_LEN(x);
@@ -482,9 +466,7 @@ MATHS = MATHS_KINDS.map do |kind|
       long l;
       #{declare_yep64_typed_array(%w{x y}, :type => 'f')}
 
-      if (TYPE(x) != T_ARRAY) {
-        rb_raise(rb_eArgError, "first argument was not an Array");
-      }
+      #{ensure_array_argument('x', 'first')}
 
       x_a = RARRAY_PTR(x);
       l = RARRAY_LEN(x);
@@ -524,12 +506,8 @@ POLYNOMIAL = %{
     long y_l;
     #{declare_yep64_typed_array(%w{x y z}, :type => 'f')}
 
-    if (TYPE(x) != T_ARRAY) {
-      rb_raise(rb_eArgError, "first argument was not an Array");
-    }
-    if (TYPE(where) != T_ARRAY) {
-      rb_raise(rb_eArgError, "second argument was not an Array");
-    }
+    #{ensure_array_argument('x', 'first')}
+    #{ensure_array_argument('where', 'second')}
 
     x_a = RARRAY_PTR(x);
     y_a = RARRAY_PTR(where);

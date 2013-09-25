@@ -86,13 +86,20 @@ class Array
   inline do |builder|
     builder.c %{
       static VALUE c_dot_product_f(VALUE v2) {
-        long n = RARRAY_LEN(self);
+        long n;
         double sum = 0.0;
-      
-        VALUE *x_a = RARRAY_PTR(self);
-        VALUE *y_a = RARRAY_PTR(v2);
-      
+        VALUE *x_a;
+        VALUE *y_a;
         long i;
+
+        if (TYPE(v2) != T_ARRAY) {
+          rb_raise(rb_eTypeError, "first argument was not an Array");
+        }
+
+        x_a = RARRAY_PTR(self);
+        y_a = RARRAY_PTR(v2);
+        n = RARRAY_LEN(self);
+
         for (i=0; i<n; i++) {
           if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
             rb_raise(rb_eTypeError, "input was not all integers and floats");
@@ -131,12 +138,19 @@ class Array
     }
     builder.c %{
       static VALUE c_evaluate_polynomial(VALUE x_v) {
-        long n = RARRAY_LEN(self);
-      
-        VALUE *x_a = RARRAY_PTR(self);
-        double x = NUM2DBL(x_v);
-      
+        long n;
+        VALUE *x_a;
+        double x;
         long i;
+
+        if (TYPE(x_v) != T_FIXNUM && TYPE(x_v) != T_BIGNUM && TYPE(x_v) != T_FLOAT) {
+          rb_raise(rb_eTypeError, "first argument was not an integer or float");
+        }
+      
+        x_a = RARRAY_PTR(self);
+        n = RARRAY_LEN(self);
+        x = NUM2DBL(x_v);
+
         for (i=0; i<n; i++) {
           if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
             rb_raise(rb_eTypeError, "input was not all integers and floats");
@@ -150,13 +164,21 @@ class Array
     builder.include('<math.h>')
     builder.c %{
       static VALUE c_evaluate_polynomial_iter(VALUE x_v) {
-        long n = RARRAY_LEN(self);
-      
-        VALUE *x_a = RARRAY_PTR(self);
-        double x = NUM2DBL(x_v);
-        double res = 0;
-      
+        long n;
+        VALUE *x_a;
+        double x;
+        double res;
         long i;
+
+        if (TYPE(x_v) != T_FIXNUM && TYPE(x_v) != T_BIGNUM && TYPE(x_v) != T_FLOAT) {
+          rb_raise(rb_eTypeError, "first argument was not an integer or float");
+        }
+
+        x_a = RARRAY_PTR(self);
+        n = RARRAY_LEN(self);
+        x = NUM2DBL(x_v);
+        res = 0;
+
         for (i=0; i<n; i++) {
           if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
             rb_raise(rb_eTypeError, "input was not all integers and floats");

@@ -11,6 +11,176 @@ def puts_with_pounds(s)
 end
 
 class Array
+  def min_v64f_s64f
+    self.inject(self[0]){|minimum, o| o < minimum ? o : minimum}
+  end
+  alias_method :min_v64s_s64s, :min_v64f_s64f
+  def max_v64f_s64f
+    self.inject(self[0]){|maximum, o| o > maximum ? o : maximum}
+  end
+  alias_method :max_v64s_s64s, :max_v64f_s64f
+  inline do |builder|
+    builder.c %{
+      static VALUE c_min_v64f_s64f() {
+        long n = RARRAY_LEN(self);
+        VALUE *x_a = RARRAY_PTR(self);
+        double minimum = x_a[0];
+      
+        long i;
+        for (i=1; i<n; i++) {
+          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
+            rb_raise(rb_eTypeError, "input was not all integers and floats");
+          }
+          if (NUM2DBL(x_a[i]) < minimum) {
+            minimum = NUM2DBL(x_a[i]);
+          }
+        }
+        return DBL2NUM(minimum);
+      }
+    }
+    inline do |builder|
+      builder.c %{
+        static VALUE c_min_v64s_s64s() {
+          long n = RARRAY_LEN(self);
+          VALUE *x_a = RARRAY_PTR(self);
+          long minimum = x_a[0];
+        
+          long i;
+          for (i=1; i<n; i++) {
+            if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
+              rb_raise(rb_eTypeError, "input was not all integers and floats");
+            }
+            if (NUM2LONG(x_a[i]) < minimum) {
+              minimum = NUM2LONG(x_a[i]);
+            }
+          }
+          return LONG2NUM(minimum);
+        }
+      }
+    end
+    builder.c %{
+      static VALUE c_max_v64f_s64f() {
+        long n = RARRAY_LEN(self);
+        VALUE *x_a = RARRAY_PTR(self);
+        double maximum = x_a[0];
+      
+        long i;
+        for (i=1; i<n; i++) {
+          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
+            rb_raise(rb_eTypeError, "input was not all integers and floats");
+          }
+          if (NUM2DBL(x_a[i]) > maximum) {
+            maximum = NUM2DBL(x_a[i]);
+          }
+        }
+        return DBL2NUM(maximum);
+      }
+    }
+    inline do |builder|
+      builder.c %{
+        static VALUE c_max_v64s_s64s() {
+          long n = RARRAY_LEN(self);
+          VALUE *x_a = RARRAY_PTR(self);
+          long maximum = x_a[0];
+        
+          long i;
+          for (i=1; i<n; i++) {
+            if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
+              rb_raise(rb_eTypeError, "input was not all integers and floats");
+            }
+            if (NUM2LONG(x_a[i]) > maximum) {
+              maximum = NUM2LONG(x_a[i]);
+            }
+          }
+          return LONG2NUM(maximum);
+        }
+      }
+    end
+  end
+
+  def min_v64fv64f_v64f(b)
+    raise "Invalid sizes: #{self.size}, #{b.size}" unless self.size == b.size
+    self.zip(b).map(&:min)
+  end
+  def max_v64fv64f_v64f(b)
+    raise "Invalid sizes: #{self.size}, #{b.size}" unless self.size == b.size
+    self.zip(b).map(&:max)
+  end
+  inline do |builder|
+    builder.c %{
+      static VALUE c_min_v64fv64f_v64f(VALUE b) {
+        long n = RARRAY_LEN(self);
+        VALUE *x_a = RARRAY_PTR(self);
+        VALUE *x_b = RARRAY_PTR(b);
+        VALUE new_ary = rb_ary_new2(n);
+      
+        long i;
+
+        if (n != RARRAY_LEN(b)) {
+          rb_raise(rb_eArgError, "mismatched Array sizes");
+        }
+        for (i=0; i<n; i++) {
+          rb_ary_push(new_ary, (NUM2DBL(x_a[i]) < NUM2DBL(x_b[i])) ? x_a[i] : x_b[i]);
+        }
+        return new_ary;
+      }
+    }
+    builder.c %{
+      static VALUE c_max_v64fv64f_v64f(VALUE b) {
+        long n = RARRAY_LEN(self);
+        VALUE *x_a = RARRAY_PTR(self);
+        VALUE *x_b = RARRAY_PTR(b);
+        VALUE new_ary = rb_ary_new2(n);
+      
+        long i;
+
+        if (n != RARRAY_LEN(b)) {
+          rb_raise(rb_eArgError, "mismatched Array sizes");
+        }
+        for (i=0; i<n; i++) {
+          rb_ary_push(new_ary, (NUM2DBL(x_a[i]) > NUM2DBL(x_b[i])) ? x_a[i] : x_b[i]);
+        }
+        return new_ary;
+      }
+    }
+  end
+  def min_v64fs64f_v64f(c)
+    self.map{|o| o < c ? o : c}
+  end
+  def max_v64fs64f_v64f(c)
+    self.map{|o| o > c ? o : c}
+  end
+  inline do |builder|
+    builder.c %{
+      static VALUE c_min_v64fs64f_v64f(VALUE c) {
+        long n = RARRAY_LEN(self);
+        VALUE *x_a = RARRAY_PTR(self);
+        double konst = NUM2DBL(c);
+        VALUE new_ary = rb_ary_new2(n);
+      
+        long i;
+        for (i=0; i<n; i++) {
+          rb_ary_push(new_ary, (NUM2DBL(x_a[i]) < konst) ? x_a[i] : c);
+        }
+        return new_ary;
+      }
+    }
+    builder.c %{
+      static VALUE c_max_v64fs64f_v64f(VALUE c) {
+        long n = RARRAY_LEN(self);
+        VALUE *x_a = RARRAY_PTR(self);
+        double konst = NUM2DBL(c);
+        VALUE new_ary = rb_ary_new2(n);
+      
+        long i;
+        for (i=0; i<n; i++) {
+          rb_ary_push(new_ary, (NUM2DBL(x_a[i]) > konst) ? x_a[i] : c);
+        }
+        return new_ary;
+      }
+    }
+  end
+
   def sum
     self.inject(0){|sum, o| sum + o}
   end
@@ -191,8 +361,10 @@ class Array
   end
 end
 
+K = Random.rand
 WIDTH = 40
 V_f = (0..1_024*1_024).to_a.map{Random.rand}
+V_s = (0..1_024*1_024).to_a.map{Random.rand(1_024)}
 
 # Dot Product
 puts_with_pounds "Dot Product"
@@ -206,6 +378,32 @@ Benchmark.bm(WIDTH) do |x|
   x.report("dot_product_f:")                   { n.times { V_f.dot_product_f(V_f) } }
   x.report("c_dot_product_f:")                 { n.times { V_f.c_dot_product_f(V_f) } }
   x.report("Ryeppp.dotproduct_v64fv64f_s64f:") { n.times { Ryeppp.dotproduct_v64fv64f_s64f(V_f, V_f) } }
+end
+
+# Min and Max
+puts_with_pounds "Min and Max"
+Benchmark.bm(WIDTH) do |x|
+  %w{min max}.each do |prefix|
+    x.report("#{prefix}_v64f_s64f:")        { n.times { V_f.send("#{prefix}_v64f_s64f") } }
+    x.report("#{prefix}_v64s_s64s:")        { n.times { V_s.send("#{prefix}_v64s_s64s") } }
+    x.report("c_#{prefix}_v64f_s64f:")      { n.times { V_f.send("c_#{prefix}_v64f_s64f") } }
+    x.report("c_#{prefix}_v64s_s64s:")      { n.times { V_s.send("c_#{prefix}_v64s_s64s") } }
+    x.report("Ryeppp.#{prefix}_v64f_s64f:") { n.times { Ryeppp.send("#{prefix}_v64f_s64f", V_f) } }
+    x.report("Ryeppp.#{prefix}_v64s_s64s:") { n.times { Ryeppp.send("#{prefix}_v64s_s64s", V_s) } }
+  end
+end
+
+# Pairwise Min and Max
+puts_with_pounds "Pairwise Min and Max"
+Benchmark.bm(WIDTH) do |x|
+  %w{min max}.each do |prefix|
+    x.report("#{prefix}_v64fv64f_v64f:")          { n.times { V_f.send("#{prefix}_v64fv64f_v64f", V_f) } }
+    x.report("c_#{prefix}_v64fv64f_v64f:")        { n.times { V_f.send("c_#{prefix}_v64fv64f_v64f", V_f) } }
+    x.report("Ryeppp.#{prefix}_v64fv64f_v64f:")   { n.times { Ryeppp.send("#{prefix}_v64fv64f_v64f", V_f, V_f) } }
+    x.report("#{prefix}_v64fs64f_v64f:")          { n.times { V_f.send("#{prefix}_v64fs64f_v64f", K) } }
+    x.report("c_#{prefix}_v64fs64f_v64f:")        { n.times { V_f.send("c_#{prefix}_v64fs64f_v64f", K) } }
+    x.report("Ryeppp.#{prefix}_v64fs64f_v64f:")   { n.times { Ryeppp.send("#{prefix}_v64fs64f_v64f", V_f, K) } }
+  end
 end
 
 # Sums

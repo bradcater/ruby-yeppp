@@ -142,14 +142,14 @@ VALUE cRyeppp;
 FUNCS = Proc.new do |verb_name|
 %{#{if verb_name == 'Multiply'
       typed_variants(%{
-        static VALUE multiply_v64{{type}}s64{{type}}_v64{{type}}(VALUE self, VALUE x, VALUE multiply_by) {
+        static VALUE multiply_iv64{{type}}s64{{type}}_iv64{{type}}(VALUE self, VALUE x, VALUE multiply_by) {
           enum YepStatus status;
           long i;
           VALUE new_ary;
           VALUE *x_a;
           long l;
           Yep64{{type}} mult_by;
-          #{declare_yep64_typed_array(%w{x y})}
+          #{declare_yep64_typed_array(%w{x})}
         
           #{ensure_array_argument('x', 'first')}
           if (TYPE(multiply_by) != T_FIXNUM && TYPE(multiply_by) != T_BIGNUM && TYPE(multiply_by) != T_FLOAT) {
@@ -161,21 +161,21 @@ FUNCS = Proc.new do |verb_name|
           mult_by = (Yep64{{type}})NUM2DBL(multiply_by);
 
           /* Allocate arrays of inputs and outputs */
-          #{allocate_yep64_typed_array(%w{x y}, 'l')}
+          #{allocate_yep64_typed_array(%w{x}, 'l')}
           
           #{initialize_yeppp}
         
-          #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x y})}
+          #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x})}
         
           /* Perform the operation */
-          status = yepCore_Multiply_V64{{type}}S64{{type}}_V64{{type}}(yep_x, mult_by, yep_y, (YepSize)l);
+          status = yepCore_Multiply_IV64{{type}}S64{{type}}_IV64{{type}}(yep_x, mult_by, (YepSize)l);
           assert(status == YepStatusOk);
 
-          #{load_ruby_array_from_yeppp_array_parameterized('y', 'i', 'l')}
+          #{load_ruby_array_from_yeppp_array_parameterized('x', 'i', 'l')}
         
           #{deinitialize_yeppp}
           
-          #{release_array_memory(%w{x y})}
+          #{release_array_memory(%w{x})}
           
           return new_ary;
         }
@@ -185,14 +185,14 @@ FUNCS = Proc.new do |verb_name|
 
   #{typed_variants(%{
     // #{verb_name} Arrays of Fixnums.
-    static VALUE #{verb_name.downcase}_v64{{type}}v64{{type}}_v64{{type}}(VALUE self, VALUE x, VALUE y) {
+    static VALUE #{verb_name.downcase}_iv64{{type}}v64{{type}}_iv64{{type}}(VALUE self, VALUE x, VALUE y) {
       enum YepStatus status;
       VALUE new_ary;
       long i;
       VALUE *x_a;
       VALUE *y_a;
       long l;
-      #{declare_yep64_typed_array(%w{x y z})}
+      #{declare_yep64_typed_array(%w{x y})}
     
       #{ensure_array_argument('x', 'first')}
       #{ensure_array_argument('y', 'second')}
@@ -202,22 +202,22 @@ FUNCS = Proc.new do |verb_name|
       l = RARRAY_LEN(x);
 
       /* Allocate arrays of inputs and outputs */
-      #{allocate_yep64_typed_array(%w{x y z}, 'l')}
+      #{allocate_yep64_typed_array(%w{x y}, 'l')}
 
       #{initialize_yeppp}
     
-      #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x y z})}
-      #{load_ruby_array_into_yeppp_array_parameterized('y', 'i', 'l', :allocated_arrays => %w{x y z})}
+      #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x y})}
+      #{load_ruby_array_into_yeppp_array_parameterized('y', 'i', 'l', :allocated_arrays => %w{x y})}
     
       /* Perform the #{verb_name} */
-      status = yepCore_#{verb_name}_V64{{type}}V64{{type}}_V64{{type}}(yep_x, yep_y, yep_z, (YepSize)l);
+      status = yepCore_#{verb_name}_IV64{{type}}V64{{type}}_IV64{{type}}(yep_x, yep_y, (YepSize)l);
       assert(status == YepStatusOk);
 
-      #{load_ruby_array_from_yeppp_array_parameterized('z', 'i', 'l')}
+      #{load_ruby_array_from_yeppp_array_parameterized('x', 'i', 'l')}
     
       #{deinitialize_yeppp}
     
-      #{release_array_memory(%w{x y z})}
+      #{release_array_memory(%w{x y})}
 
       return new_ary;
     }
@@ -302,14 +302,14 @@ end.join("\n\n"))
 PAIRWISE_MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
   %{
     // Get the pairwise #{kind.downcase}ima from Arrays.
-    static VALUE #{kind.downcase}_v64{{type}}v64{{type}}_v64{{type}}(VALUE self, VALUE x, VALUE y) {
+    static VALUE #{kind.downcase}_iv64{{type}}v64{{type}}_iv64{{type}}(VALUE self, VALUE x, VALUE y) {
       enum YepStatus status;
       long i;
       VALUE new_ary;
       VALUE *x_a;
       VALUE *y_a;
       long l;
-      #{declare_yep64_typed_array(%w{x y z})}
+      #{declare_yep64_typed_array(%w{x y})}
       
       #{ensure_array_argument('x', 'first')}
       #{ensure_array_argument('y', 'second')}
@@ -319,22 +319,22 @@ PAIRWISE_MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
       l = RARRAY_LEN(x);
 
       /* Allocate arrays of inputs and outputs */
-      #{allocate_yep64_typed_array(%w{x y z}, 'l')}
+      #{allocate_yep64_typed_array(%w{x y}, 'l')}
 
       #{initialize_yeppp}
   
-      #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x y z})}
-      #{load_ruby_array_into_yeppp_array_parameterized('y', 'i', 'l', :allocated_arrays => %w{x y z})}
+      #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x y})}
+      #{load_ruby_array_into_yeppp_array_parameterized('y', 'i', 'l', :allocated_arrays => %w{x y})}
   
       /* Perform the operation */
-      status = yepCore_#{kind}_V64{{type}}V64{{type}}_V64{{type}}(yep_x, yep_y, yep_z, (YepSize)l);
+      status = yepCore_#{kind}_IV64{{type}}V64{{type}}_IV64{{type}}(yep_x, yep_y, (YepSize)l);
       assert(status == YepStatusOk);
 
-      #{load_ruby_array_from_yeppp_array_parameterized('z', 'i', 'l')}
+      #{load_ruby_array_from_yeppp_array_parameterized('x', 'i', 'l')}
 
       #{deinitialize_yeppp}
   
-      #{release_array_memory(%w{x y z})}
+      #{release_array_memory(%w{x y})}
    
       return new_ary;
     }
@@ -344,14 +344,14 @@ end.join("\n\n"), :only_type => 'f')
 CONSTANT_MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
   %{
     // Get the #{kind.downcase}ima from an Array and a constant.
-    static VALUE #{kind.downcase}_v64{{type}}s64{{type}}_v64{{type}}(VALUE self, VALUE x, VALUE c) {
+    static VALUE #{kind.downcase}_iv64{{type}}s64{{type}}_iv64{{type}}(VALUE self, VALUE x, VALUE c) {
       enum YepStatus status;
       long i;
       VALUE new_ary;
       VALUE *x_a;
       long l;
       Yep64f konst;
-      #{declare_yep64_typed_array(%w{x y})}
+      #{declare_yep64_typed_array(%w{x})}
   
       #{ensure_array_argument('x', 'first')}
       if (TYPE(c) != T_FIXNUM && TYPE(c) != T_BIGNUM && TYPE(c) != T_FLOAT) {
@@ -363,21 +363,21 @@ CONSTANT_MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
       konst = (Yep64f)NUM2{{ruby_type}}(c);
 
       /* Allocate arrays of inputs and outputs */
-      #{allocate_yep64_typed_array(%w{x y}, 'l')}
+      #{allocate_yep64_typed_array(%w{x}, 'l')}
 
       #{initialize_yeppp}
   
-      #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x y})}
+      #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x})}
   
       /* Perform the operation */
-      status = yepCore_#{kind}_V64{{type}}S64{{type}}_V64{{type}}(yep_x, konst, yep_y, (YepSize)l);
+      status = yepCore_#{kind}_IV64{{type}}S64{{type}}_IV64{{type}}(yep_x, konst, (YepSize)l);
       assert(status == YepStatusOk);
 
-      #{load_ruby_array_from_yeppp_array_parameterized('y', 'i', 'l')}
+      #{load_ruby_array_from_yeppp_array_parameterized('x', 'i', 'l')}
 
       #{deinitialize_yeppp}
   
-      #{release_array_memory(%w{x y})}
+      #{release_array_memory(%w{x})}
    
       return new_ary;
     }
@@ -386,13 +386,13 @@ end.join("\n\n"), :only_type => 'f')
 
 NEGATE = typed_variants(%{
   // Negate an Array.
-  static VALUE negate_v64{{type}}_s64{{type}}(VALUE self, VALUE x) {
+  static VALUE negate_iv64{{type}}_is64{{type}}(VALUE self, VALUE x) {
     enum YepStatus status;
     long i;
     VALUE new_ary;
     VALUE *x_a;
     long l;
-    #{declare_yep64_typed_array(%w{x y})}
+    #{declare_yep64_typed_array(%w{x})}
 
     #{ensure_array_argument('x', 'first')}
 
@@ -400,21 +400,21 @@ NEGATE = typed_variants(%{
     l = RARRAY_LEN(x);
 
     /* Allocate arrays of inputs and outputs */
-    #{allocate_yep64_typed_array(%w{x y}, 'l')}
+    #{allocate_yep64_typed_array(%w{x}, 'l')}
   
     #{initialize_yeppp}
   
-    #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x y})}
+    #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x})}
   
     /* Perform the negation */
-    status = yepCore_Negate_V64{{type}}_V64{{type}}(yep_x, yep_y, (YepSize)l);
+    status = yepCore_Negate_IV64{{type}}_IV64{{type}}(yep_x, (YepSize)l);
     assert(status == YepStatusOk);
   
-    #{load_ruby_array_from_yeppp_array_parameterized('y', 'i', 'l')}
+    #{load_ruby_array_from_yeppp_array_parameterized('x', 'i', 'l')}
   
     #{deinitialize_yeppp}
   
-    #{release_array_memory(%w{x y})}
+    #{release_array_memory(%w{x})}
    
     return new_ary;
   }
@@ -545,18 +545,18 @@ void Init_ryeppp() {
   cRyeppp = rb_define_class("Ryeppp", rb_cObject);
 
   /* Addition */
-  rb_define_singleton_method(cRyeppp, "add_v64fv64f_v64f", add_v64fv64f_v64f, 2);
-  rb_define_singleton_method(cRyeppp, "add_v64sv64s_v64s", add_v64sv64s_v64s, 2);
+  rb_define_singleton_method(cRyeppp, "add_v64fv64f_v64f", add_iv64fv64f_iv64f, 2);
+  rb_define_singleton_method(cRyeppp, "add_v64sv64s_v64s", add_iv64sv64s_iv64s, 2);
 
   /* Subtraction */
-  rb_define_singleton_method(cRyeppp, "subtract_v64fv64f_v64f", subtract_v64fv64f_v64f, 2);
-  rb_define_singleton_method(cRyeppp, "subtract_v64sv64s_v64s", subtract_v64sv64s_v64s, 2);
+  rb_define_singleton_method(cRyeppp, "subtract_v64fv64f_v64f", subtract_iv64fv64f_iv64f, 2);
+  rb_define_singleton_method(cRyeppp, "subtract_v64sv64s_v64s", subtract_iv64sv64s_iv64s, 2);
 
   /* Multiplication */
-  rb_define_singleton_method(cRyeppp, "multiply_v64fs64f_v64f", multiply_v64fs64f_v64f, 2);
-  rb_define_singleton_method(cRyeppp, "multiply_v64sv64s_v64s", multiply_v64sv64s_v64s, 2);
-  rb_define_singleton_method(cRyeppp, "multiply_v64fv64f_v64f", multiply_v64fv64f_v64f, 2);
-  rb_define_singleton_method(cRyeppp, "multiply_v64ss64s_v64s", multiply_v64ss64s_v64s, 2);
+  rb_define_singleton_method(cRyeppp, "multiply_v64fs64f_v64f", multiply_iv64fs64f_iv64f, 2);
+  rb_define_singleton_method(cRyeppp, "multiply_v64sv64s_v64s", multiply_iv64sv64s_iv64s, 2);
+  rb_define_singleton_method(cRyeppp, "multiply_v64fv64f_v64f", multiply_iv64fv64f_iv64f, 2);
+  rb_define_singleton_method(cRyeppp, "multiply_v64ss64s_v64s", multiply_iv64ss64s_iv64s, 2);
 
   /* Dot Product */
   rb_define_singleton_method(cRyeppp, "dotproduct_v64fv64f_s64f", dotproduct_v64fv64f_s64f, 2);
@@ -570,24 +570,24 @@ void Init_ryeppp() {
   rb_define_singleton_method(cRyeppp, "max_v64s_s64s", max_v64s_s64s, 1);
 
   /* Pairwise Minima */
-  rb_define_singleton_method(cRyeppp, "min_v64fv64f_v64f", min_v64fv64f_v64f, 2);
+  rb_define_singleton_method(cRyeppp, "min_v64fv64f_v64f", min_iv64fv64f_iv64f, 2);
   // Pairwise signed min is not available.
 
   /* Pairwise Maxima */
-  rb_define_singleton_method(cRyeppp, "max_v64fv64f_v64f", max_v64fv64f_v64f, 2);
+  rb_define_singleton_method(cRyeppp, "max_v64fv64f_v64f", max_iv64fv64f_iv64f, 2);
   // Pairwise signed max is not available.
 
   /* Constant Minima */
-  rb_define_singleton_method(cRyeppp, "min_v64fs64f_v64f", min_v64fs64f_v64f, 2);
+  rb_define_singleton_method(cRyeppp, "min_v64fs64f_v64f", min_iv64fs64f_iv64f, 2);
   // Constant signed min is not available.
 
   /* Constant Maxima */
-  rb_define_singleton_method(cRyeppp, "max_v64fs64f_v64f", max_v64fs64f_v64f, 2);
+  rb_define_singleton_method(cRyeppp, "max_v64fs64f_v64f", max_iv64fs64f_iv64f, 2);
   // Constant signed max is not available.
 
   /* Negation */
-  rb_define_singleton_method(cRyeppp, "negate_v64f_s64f", negate_v64f_s64f, 1);
-  rb_define_singleton_method(cRyeppp, "negate_v64s_s64s", negate_v64s_s64s, 1);
+  rb_define_singleton_method(cRyeppp, "negate_v64f_s64f", negate_iv64f_is64f, 1);
+  rb_define_singleton_method(cRyeppp, "negate_v64s_s64s", negate_iv64s_is64s, 1);
 
   /* Sums */
   rb_define_singleton_method(cRyeppp, "sum_v64f_s64f", sum_v64f_s64f, 1);

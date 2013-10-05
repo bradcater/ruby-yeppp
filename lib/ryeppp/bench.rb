@@ -181,6 +181,90 @@ class Array
     }
   end
 
+  def log
+    self.map{|o| Math.log(o)}
+  end
+  def exp
+    self.map{|o| Math::E ** o}
+  end
+  def sin
+    self.map{|o| Math.sin(o)}
+  end
+  def cos
+    self.map{|o| Math.cos(o)}
+  end
+  def tan
+    self.map{|o| Math.tan(o)}
+  end
+  inline do |builder|
+    builder.include('<math.h>')
+    builder.c %{
+      static VALUE c_log() {
+        long n = RARRAY_LEN(self);
+        VALUE *x_a = RARRAY_PTR(self);
+        VALUE new_ary = rb_ary_new2(n);
+      
+        long i;
+        for (i=0; i<n; i++) {
+          rb_ary_push(new_ary, DBL2NUM(log(NUM2DBL(x_a[i]))));
+        }
+        return new_ary;
+      }
+    }
+    builder.c %{
+      static VALUE c_exp() {
+        long n = RARRAY_LEN(self);
+        VALUE *x_a = RARRAY_PTR(self);
+        VALUE new_ary = rb_ary_new2(n);
+      
+        long i;
+        for (i=0; i<n; i++) {
+          rb_ary_push(new_ary, DBL2NUM(pow(2.717, NUM2DBL(x_a[i]))));
+        }
+        return new_ary;
+      }
+    }
+    builder.c %{
+      static VALUE c_sin() {
+        long n = RARRAY_LEN(self);
+        VALUE *x_a = RARRAY_PTR(self);
+        VALUE new_ary = rb_ary_new2(n);
+      
+        long i;
+        for (i=0; i<n; i++) {
+          rb_ary_push(new_ary, DBL2NUM(sin(NUM2DBL(x_a[i]))));
+        }
+        return new_ary;
+      }
+    }
+    builder.c %{
+      static VALUE c_cos() {
+        long n = RARRAY_LEN(self);
+        VALUE *x_a = RARRAY_PTR(self);
+        VALUE new_ary = rb_ary_new2(n);
+      
+        long i;
+        for (i=0; i<n; i++) {
+          rb_ary_push(new_ary, DBL2NUM(cos(NUM2DBL(x_a[i]))));
+        }
+        return new_ary;
+      }
+    }
+    builder.c %{
+      static VALUE c_tan() {
+        long n = RARRAY_LEN(self);
+        VALUE *x_a = RARRAY_PTR(self);
+        VALUE new_ary = rb_ary_new2(n);
+      
+        long i;
+        for (i=0; i<n; i++) {
+          rb_ary_push(new_ary, DBL2NUM(tan(NUM2DBL(x_a[i]))));
+        }
+        return new_ary;
+      }
+    }
+  end
+
   def sum
     self.inject(0){|sum, o| sum + o}
   end
@@ -422,7 +506,8 @@ puts_with_pounds "Math Functions"
 n = 1
 Benchmark.bm(WIDTH) do |x|
   %w{log exp sin cos tan}.each do |f|
-    x.report("#{f}:")                  { n.times { V_f.each{|o| Math.send(f, o)} } }
+    x.report("#{f}:")                  { n.times { V_f.send(f) } }
+    x.report("c_#{f}:")                { n.times { V_f.send("c_#{f}") } }
     x.report("Ryeppp.#{f}_v64f_v64f:") { n.times { Ryeppp.send("#{f}_v64f_v64f", V_f) } }
   end
 end

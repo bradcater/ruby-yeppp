@@ -481,12 +481,12 @@ end
 puts_with_pounds "Pairwise Min and Max"
 Benchmark.bm(WIDTH) do |x|
   %w{min max}.each do |prefix|
-    x.report("#{prefix}_v64fv64f_v64f:")          { n.times { V_f.send("#{prefix}_v64fv64f_v64f", V_f) } }
-    x.report("c_#{prefix}_v64fv64f_v64f:")        { n.times { V_f.send("c_#{prefix}_v64fv64f_v64f", V_f) } }
-    x.report("Ryeppp.#{prefix}_v64fv64f_v64f:")   { n.times { Ryeppp.send("#{prefix}_v64fv64f_v64f", V_f, V_f) } }
-    x.report("#{prefix}_v64fs64f_v64f:")          { n.times { V_f.send("#{prefix}_v64fs64f_v64f", K) } }
-    x.report("c_#{prefix}_v64fs64f_v64f:")        { n.times { V_f.send("c_#{prefix}_v64fs64f_v64f", K) } }
-    x.report("Ryeppp.#{prefix}_v64fs64f_v64f:")   { n.times { Ryeppp.send("#{prefix}_v64fs64f_v64f", V_f, K) } }
+    x.report("#{prefix}_v64fv64f_v64f:")        { n.times { V_f.send("#{prefix}_v64fv64f_v64f", V_f) } }
+    x.report("c_#{prefix}_v64fv64f_v64f:")      { n.times { V_f.send("c_#{prefix}_v64fv64f_v64f", V_f) } }
+    x.report("Ryeppp.#{prefix}_v64fv64f_v64f:") { n.times { Ryeppp.send("#{prefix}_v64fv64f_v64f", V_f, V_f) } }
+    x.report("#{prefix}_v64fs64f_v64f:")        { n.times { V_f.send("#{prefix}_v64fs64f_v64f", K) } }
+    x.report("c_#{prefix}_v64fs64f_v64f:")      { n.times { V_f.send("c_#{prefix}_v64fs64f_v64f", K) } }
+    x.report("Ryeppp.#{prefix}_v64fs64f_v64f:") { n.times { Ryeppp.send("#{prefix}_v64fs64f_v64f", V_f, K) } }
   end
 end
 

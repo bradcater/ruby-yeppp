@@ -1,6 +1,3 @@
-MAX_SIGNED_INTEGER = 2**63 - 1
-MIN_SIGNED_INTEGER = -1 * MAX_SIGNED_INTEGER
-
 class String
   def pluralize
     "#{self}#{self.size > 0 && self[-1] == 'e' ? 's' : 'es'}"
@@ -39,17 +36,6 @@ def ensure_array_argument(var_name, var_position)
   }}
 end
 
-def guard_integer_input_size(var_name, iteration_var_name, allocated_arrays)
-  %{if (rb_funcall(#{var_name}_a[#{iteration_var_name}], '>', 1, #{MAX_SIGNED_INTEGER})) {
-      #{release_array_memory allocated_arrays}
-      rb_raise(rb_eRangeError, "input was too large for 64-bit signed integer");
-    }
-    if (rb_funcall(#{var_name}_a[#{iteration_var_name}], '<', 1, #{MIN_SIGNED_INTEGER})) {
-      #{release_array_memory allocated_arrays}
-      rb_raise(rb_eRangeError, "input was too small for 64-bit signed integer");
-    }}
-end
-
 def load_ruby_array_from_yeppp_array(var_name, iteration_var_name, len_var_name, type)
   %{/* Load the Ruby Array */
     new_ary = rb_ary_new2(#{len_var_name});
@@ -81,7 +67,6 @@ def load_ruby_array_into_yeppp_array(var_name, iteration_var_name, len_var_name,
         #{release_array_memory opts[:allocated_arrays]}
         rb_raise(rb_eTypeError, "input was not all #{permitted_types.map(&:to_s).map(&:pluralize).join(' and ')}");
       }
-      #{guard_integer_input_size(var_name, iteration_var_name, opts[:allocated_arrays])}
       yep_#{var_name}[#{opts[:reverse] ? "#{len_var_name} - #{iteration_var_name} - 1" : iteration_var_name}] = (Yep64#{type})NUM2#{type == 'f' ? 'DBL' : 'LONG'}(#{var_name}_a[#{iteration_var_name}]);
     }}
 end
@@ -92,7 +77,6 @@ def load_ruby_array_into_yeppp_array_parameterized(var_name, iteration_var_name,
         #{release_array_memory opts[:allocated_arrays]}
         rb_raise(rb_eTypeError, "input was not all {{ruby_klass_human}}");
       }
-      #{guard_integer_input_size(var_name, iteration_var_name, opts[:allocated_arrays])}
       yep_#{var_name}[#{iteration_var_name}] = (Yep64{{type}})NUM2{{ruby_type}}(#{var_name}_a[#{iteration_var_name}]);
     }}
 end

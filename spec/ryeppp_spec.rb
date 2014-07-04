@@ -1,12 +1,15 @@
 require 'spec_helper'
 
+SMALLEST_TOO_BIG_INTEGER = 2**63
+BIGGEST_TOO_SMALL_INTEGER = -2**63 - 1
+
 describe Ryeppp do
   # Addition
   it 'should add vectors of Fixnums' do
     Ryeppp.add_v64sv64s_v64s([1], [2]).should eq([3])
     expect{Ryeppp.add_v64sv64s_v64s([1, 'a'], [2, 'b'])}.to raise_error(TypeError)
-    expect{Ryeppp.add_v64sv64s_v64s([2**63], [1])}.to raise_error(RangeError)
-    expect{Ryeppp.add_v64sv64s_v64s([-2**63], [1])}.to raise_error(RangeError)
+    expect{Ryeppp.add_v64sv64s_v64s([SMALLEST_TOO_BIG_INTEGER], [1])}.to raise_error(RangeError)
+    expect{Ryeppp.add_v64sv64s_v64s([BIGGEST_TOO_SMALL_INTEGER], [1])}.to raise_error(RangeError)
     expect{Ryeppp.add_v64sv64s_v64s([1], [2, 3])}.to raise_error(ArgumentError)
   end
   it 'should add vectors of Floats' do
@@ -19,8 +22,8 @@ describe Ryeppp do
   it 'should subtract vectors of Fixnums' do
     Ryeppp.subtract_v64sv64s_v64s([1], [2]).should eq([-1])
     expect{Ryeppp.subtract_v64sv64s_v64s([1, 'a'], [2, 'b'])}.to raise_error(TypeError)
-    expect{Ryeppp.subtract_v64sv64s_v64s([2**63], [2])}.to raise_error(RangeError)
-    expect{Ryeppp.subtract_v64sv64s_v64s([-2**63], [2])}.to raise_error(RangeError)
+    expect{Ryeppp.subtract_v64sv64s_v64s([SMALLEST_TOO_BIG_INTEGER], [2])}.to raise_error(RangeError)
+    expect{Ryeppp.subtract_v64sv64s_v64s([BIGGEST_TOO_SMALL_INTEGER], [2])}.to raise_error(RangeError)
     expect{Ryeppp.subtract_v64sv64s_v64s([1], [2, 3])}.to raise_error(ArgumentError)
   end
   it 'should subtract vectors of Floats' do
@@ -33,8 +36,8 @@ describe Ryeppp do
   it 'should multiply a vector of Fixnums by a constant' do
     Ryeppp.multiply_v64ss64s_v64s([1, 2, 3], 2).should eq([2, 4, 6])
     expect{Ryeppp.multiply_v64ss64s_v64s([1, 'a'], 2)}.to raise_error(TypeError)
-    expect{Ryeppp.multiply_v64ss64s_v64s([2**63], 2)}.to raise_error(RangeError)
-    expect{Ryeppp.multiply_v64ss64s_v64s([-2**63], 2)}.to raise_error(RangeError)
+    expect{Ryeppp.multiply_v64ss64s_v64s([SMALLEST_TOO_BIG_INTEGER], 2)}.to raise_error(RangeError)
+    expect{Ryeppp.multiply_v64ss64s_v64s([BIGGEST_TOO_SMALL_INTEGER], 2)}.to raise_error(RangeError)
     expect{Ryeppp.multiply_v64ss64s_v64s(2, 2)}.to raise_error(ArgumentError)
     expect{Ryeppp.multiply_v64ss64s_v64s([1, 2], 'a')}.to raise_error(ArgumentError)
   end
@@ -46,8 +49,8 @@ describe Ryeppp do
   it 'should multiply vectors of Fixnums' do
     Ryeppp.multiply_v64sv64s_v64s([2], [3]).should eq([6])
     expect{Ryeppp.multiply_v64sv64s_v64s([1, 'a'], [2, 'b'])}.to raise_error(TypeError)
-    expect{Ryeppp.multiply_v64sv64s_v64s([2**63], [2])}.to raise_error(RangeError)
-    expect{Ryeppp.multiply_v64sv64s_v64s([-2**63], [2])}.to raise_error(RangeError)
+    expect{Ryeppp.multiply_v64sv64s_v64s([SMALLEST_TOO_BIG_INTEGER], [2])}.to raise_error(RangeError)
+    expect{Ryeppp.multiply_v64sv64s_v64s([BIGGEST_TOO_SMALL_INTEGER], [2])}.to raise_error(RangeError)
     expect{Ryeppp.multiply_v64sv64s_v64s(2, [2])}.to raise_error(ArgumentError)
     expect{Ryeppp.multiply_v64sv64s_v64s([2], 2)}.to raise_error(ArgumentError)
     expect{Ryeppp.multiply_v64sv64s_v64s([1], [2, 3])}.to raise_error(ArgumentError)
@@ -71,8 +74,8 @@ describe Ryeppp do
   it 'should find the minimum in a vector of Fixnums' do
     Ryeppp.min_v64s_s64s([3, 2, 1]).should eq(1)
     expect{Ryeppp.min_v64s_s64s([1, 'a'])}.to raise_error(TypeError)
-    expect{Ryeppp.min_v64s_s64s([2**63])}.to raise_error(RangeError)
-    expect{Ryeppp.min_v64s_s64s([-2**63])}.to raise_error(RangeError)
+    expect{Ryeppp.min_v64s_s64s([SMALLEST_TOO_BIG_INTEGER])}.to raise_error(RangeError)
+    expect{Ryeppp.min_v64s_s64s([BIGGEST_TOO_SMALL_INTEGER])}.to raise_error(RangeError)
     expect{Ryeppp.min_v64s_s64s(2)}.to raise_error(ArgumentError)
   end
   it 'should find the minimum in a vector of Floats' do
@@ -85,8 +88,8 @@ describe Ryeppp do
   it 'should find the maximum in a vector of Fixnums' do
     Ryeppp.max_v64s_s64s([3, 2, 1]).should eq(3)
     expect{Ryeppp.max_v64s_s64s([1, 'a'])}.to raise_error(TypeError)
-    expect{Ryeppp.max_v64s_s64s([2**63])}.to raise_error(RangeError)
-    expect{Ryeppp.max_v64s_s64s([-2**63])}.to raise_error(RangeError)
+    expect{Ryeppp.max_v64s_s64s([SMALLEST_TOO_BIG_INTEGER])}.to raise_error(RangeError)
+    expect{Ryeppp.max_v64s_s64s([BIGGEST_TOO_SMALL_INTEGER])}.to raise_error(RangeError)
     expect{Ryeppp.max_v64s_s64s(2)}.to raise_error(ArgumentError)
   end
   it 'should find the maximum in a vector of Floats' do
@@ -131,8 +134,8 @@ describe Ryeppp do
   it 'should negate vectors of Fixnums' do
     Ryeppp.negate_v64s_s64s([1]).should eq([-1])
     expect{Ryeppp.negate_v64s_s64s([1, 'a'])}.to raise_error(TypeError)
-    expect{Ryeppp.negate_v64s_s64s([2**63])}.to raise_error(RangeError)
-    expect{Ryeppp.negate_v64s_s64s([-2**63])}.to raise_error(RangeError)
+    expect{Ryeppp.negate_v64s_s64s([SMALLEST_TOO_BIG_INTEGER])}.to raise_error(RangeError)
+    expect{Ryeppp.negate_v64s_s64s([BIGGEST_TOO_SMALL_INTEGER])}.to raise_error(RangeError)
     expect{Ryeppp.negate_v64s_s64s(1)}.to raise_error(ArgumentError)
   end
   it 'should negate vectors of Floats' do

@@ -1,6 +1,7 @@
 require "bundler/gem_tasks"
 require "rake/extensiontask"
 require "rspec/core/rake_task"
+require "version_bumper"
 
 spec = Gem::Specification.load('ryeppp.gemspec')
 Rake::ExtensionTask.new('ryeppp', spec)

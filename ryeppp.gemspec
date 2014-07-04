@@ -27,4 +27,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec", ">= 2.13.0"
   spec.add_development_dependency "RubyInline", "~> 3.12.2"
   spec.add_development_dependency "trollop", "~> 2.0"
+  spec.add_development_dependency "version_bumper", "~> 0.3.0"
 end

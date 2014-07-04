@@ -1,10 +1,13 @@
 require 'benchmark'
 require 'inline'
+require 'trollop'
 
 $:<< './lib'
 require 'ryeppp'
 
-VERBOSE = %w{1 t true y yes}.include?(ENV['VERBOSE'])
+$opts = Trollop::options do
+  opt :verbose, 'Verbose'
+end
 
 def puts_with_pounds(s)
   puts "\n\n#{s} #{'#' * (79 - s.size)}"
@@ -25,7 +28,7 @@ class Array
         long n = RARRAY_LEN(self);
         VALUE *x_a = RARRAY_PTR(self);
         double minimum = x_a[0];
-      
+
         long i;
         for (i=1; i<n; i++) {
           if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
@@ -44,7 +47,7 @@ class Array
           long n = RARRAY_LEN(self);
           VALUE *x_a = RARRAY_PTR(self);
           long minimum = x_a[0];
-        
+
           long i;
           for (i=1; i<n; i++) {
             if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
@@ -63,7 +66,7 @@ class Array
         long n = RARRAY_LEN(self);
         VALUE *x_a = RARRAY_PTR(self);
         double maximum = x_a[0];
-      
+
         long i;
         for (i=1; i<n; i++) {
           if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
@@ -82,7 +85,7 @@ class Array
           long n = RARRAY_LEN(self);
           VALUE *x_a = RARRAY_PTR(self);
           long maximum = x_a[0];
-        
+
           long i;
           for (i=1; i<n; i++) {
             if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
@@ -113,7 +116,7 @@ class Array
         VALUE *x_a = RARRAY_PTR(self);
         VALUE *x_b = RARRAY_PTR(b);
         VALUE new_ary = rb_ary_new2(n);
-      
+
         long i;
 
         if (n != RARRAY_LEN(b)) {
@@ -131,7 +134,7 @@ class Array
         VALUE *x_a = RARRAY_PTR(self);
         VALUE *x_b = RARRAY_PTR(b);
         VALUE new_ary = rb_ary_new2(n);
-      
+
         long i;
 
         if (n != RARRAY_LEN(b)) {
@@ -157,7 +160,7 @@ class Array
         VALUE *x_a = RARRAY_PTR(self);
         double konst = NUM2DBL(c);
         VALUE new_ary = rb_ary_new2(n);
-      
+
         long i;
         for (i=0; i<n; i++) {
           rb_ary_push(new_ary, (NUM2DBL(x_a[i]) < konst) ? x_a[i] : c);
@@ -171,7 +174,7 @@ class Array
         VALUE *x_a = RARRAY_PTR(self);
         double konst = NUM2DBL(c);
         VALUE new_ary = rb_ary_new2(n);
-      
+
         long i;
         for (i=0; i<n; i++) {
           rb_ary_push(new_ary, (NUM2DBL(x_a[i]) > konst) ? x_a[i] : c);
@@ -203,7 +206,7 @@ class Array
         long n = RARRAY_LEN(self);
         VALUE *x_a = RARRAY_PTR(self);
         VALUE new_ary = rb_ary_new2(n);
-      
+
         long i;
         for (i=0; i<n; i++) {
           rb_ary_push(new_ary, DBL2NUM(log(NUM2DBL(x_a[i]))));
@@ -216,7 +219,7 @@ class Array
         long n = RARRAY_LEN(self);
         VALUE *x_a = RARRAY_PTR(self);
         VALUE new_ary = rb_ary_new2(n);
-      
+
         long i;
         for (i=0; i<n; i++) {
           rb_ary_push(new_ary, DBL2NUM(pow(2.717, NUM2DBL(x_a[i]))));
@@ -229,7 +232,7 @@ class Array
         long n = RARRAY_LEN(self);
         VALUE *x_a = RARRAY_PTR(self);
         VALUE new_ary = rb_ary_new2(n);
-      
+
         long i;
         for (i=0; i<n; i++) {
           rb_ary_push(new_ary, DBL2NUM(sin(NUM2DBL(x_a[i]))));
@@ -242,7 +245,7 @@ class Array
         long n = RARRAY_LEN(self);
         VALUE *x_a = RARRAY_PTR(self);
         VALUE new_ary = rb_ary_new2(n);
-      
+
         long i;
         for (i=0; i<n; i++) {
           rb_ary_push(new_ary, DBL2NUM(cos(NUM2DBL(x_a[i]))));
@@ -255,7 +258,7 @@ class Array
         long n = RARRAY_LEN(self);
         VALUE *x_a = RARRAY_PTR(self);
         VALUE new_ary = rb_ary_new2(n);
-      
+
         long i;
         for (i=0; i<n; i++) {
           rb_ary_push(new_ary, DBL2NUM(tan(NUM2DBL(x_a[i]))));
@@ -279,9 +282,9 @@ class Array
       static VALUE c_sum() {
         long n = RARRAY_LEN(self);
         double sum = 0.0;
-      
+
         VALUE *x_a = RARRAY_PTR(self);
-      
+
         long i;
         for (i=0; i<n; i++) {
           if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
@@ -298,9 +301,9 @@ class Array
       static VALUE c_sumabs() {
         long n = RARRAY_LEN(self);
         double sum = 0.0;
-      
+
         VALUE *x_a = RARRAY_PTR(self);
-      
+
         long i;
         for (i=0; i<n; i++) {
           if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
@@ -317,9 +320,9 @@ class Array
       static VALUE c_sumsquares() {
         long n = RARRAY_LEN(self);
         double sum = 0.0;
-      
+
         VALUE *x_a = RARRAY_PTR(self);
-      
+
         long i;
         for (i=0; i<n; i++) {
           if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
@@ -400,7 +403,7 @@ class Array
         if (TYPE(x_v) != T_FIXNUM && TYPE(x_v) != T_BIGNUM && TYPE(x_v) != T_FLOAT) {
           rb_raise(rb_eTypeError, "first argument was not an integer or float");
         }
-      
+
         x_a = RARRAY_PTR(self);
         n = RARRAY_LEN(self);
         x = NUM2DBL(x_v);
@@ -453,7 +456,7 @@ V_s = (0..1_024*1_024).to_a.map{Random.rand(1_024)}
 # Dot Product
 puts_with_pounds "Dot Product"
 n = 1
-if VERBOSE
+if $opts[:verbose]
   puts "dot_product_f: #{V_f.dot_product_f(V_f)}"
   puts "c_dot_product_f: #{V_f.c_dot_product_f(V_f)}"
   puts "Ryeppp.dotproduct_v64fv64f_s64f: #{Ryeppp.dotproduct_v64fv64f_s64f(V_f, V_f)}"
@@ -518,7 +521,7 @@ n = 1
 P_SMALL = (0..1_024).to_a.map{Random.rand}
 P_LARGE = (0..1_024*1_024).to_a.map{Random.rand}
 X = Random.rand
-if VERBOSE
+if $opts[:verbose]
   puts "evaluate_polynomial: #{P_SMALL.evaluate_polynomial(X)}"
   puts "evaluate_polynomial_iter: #{P_SMALL.evaluate_polynomial_iter(X)}"
   puts "c_evaluate_polynomial: #{P_SMALL.c_evaluate_polynomial(X)}"

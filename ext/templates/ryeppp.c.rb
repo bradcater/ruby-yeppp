@@ -150,7 +150,7 @@ FUNCS = Proc.new do |verb_name|
           long l;
           Yep64{{type}} mult_by;
           #{declare_yep64_typed_array(%w{x})}
-        
+
           #{ensure_array_argument('x', 'first')}
           if (TYPE(multiply_by) != T_FIXNUM && TYPE(multiply_by) != T_BIGNUM && TYPE(multiply_by) != T_FLOAT) {
             rb_raise(rb_eArgError, "second argument was not an integer or a float");
@@ -162,21 +162,21 @@ FUNCS = Proc.new do |verb_name|
 
           /* Allocate arrays of inputs and outputs */
           #{allocate_yep64_typed_array(%w{x}, 'l')}
-          
+
           #{initialize_yeppp}
-        
+
           #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x})}
-        
+
           /* Perform the operation */
           status = yepCore_Multiply_IV64{{type}}S64{{type}}_IV64{{type}}(yep_x, mult_by, (YepSize)l);
           assert(status == YepStatusOk);
 
           #{load_ruby_array_from_yeppp_array_parameterized('x', 'i', 'l')}
-        
+
           #{deinitialize_yeppp}
-          
+
           #{release_array_memory(%w{x})}
-          
+
           return new_ary;
         }
       }).strip.freeze
@@ -193,7 +193,7 @@ FUNCS = Proc.new do |verb_name|
       VALUE *y_a;
       long l;
       #{declare_yep64_typed_array(%w{x y})}
-    
+
       #{ensure_array_argument('x', 'first')}
       #{ensure_array_argument('y', 'second')}
 
@@ -201,22 +201,26 @@ FUNCS = Proc.new do |verb_name|
       y_a = RARRAY_PTR(y);
       l = RARRAY_LEN(x);
 
+      if (l != RARRAY_LEN(y)) {
+        rb_raise(rb_eArgError, "given array arguments have different lengths");
+      }
+
       /* Allocate arrays of inputs and outputs */
       #{allocate_yep64_typed_array(%w{x y}, 'l')}
 
       #{initialize_yeppp}
-    
+
       #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x y})}
       #{load_ruby_array_into_yeppp_array_parameterized('y', 'i', 'l', :allocated_arrays => %w{x y})}
-    
+
       /* Perform the #{verb_name} */
       status = yepCore_#{verb_name}_IV64{{type}}V64{{type}}_IV64{{type}}(yep_x, yep_y, (YepSize)l);
       assert(status == YepStatusOk);
 
       #{load_ruby_array_from_yeppp_array_parameterized('x', 'i', 'l')}
-    
+
       #{deinitialize_yeppp}
-    
+
       #{release_array_memory(%w{x y})}
 
       return new_ary;
@@ -235,7 +239,7 @@ DOT_PRODUCT = %{
     VALUE *y_a;
     long l;
     #{declare_yep64_typed_array(%w{x y}, :type => 'f')}
-  
+
     #{ensure_array_argument('x', 'first')}
     #{ensure_array_argument('y', 'second')}
 
@@ -243,22 +247,26 @@ DOT_PRODUCT = %{
     y_a = RARRAY_PTR(y);
     l = RARRAY_LEN(x);
 
+    if (l != RARRAY_LEN(y)) {
+      rb_raise(rb_eArgError, "given array arguments have different lengths");
+    }
+
     /* Allocate arrays of inputs and outputs */
     #{allocate_yep64_typed_array(%w{x y}, 'l', :type => 'f')}
 
     #{initialize_yeppp}
-  
+
     #{load_ruby_array_into_yeppp_array('x', 'i', 'l', 'f', [:integer, :float], :allocated_arrays => %w{x y})}
     #{load_ruby_array_into_yeppp_array('y', 'i', 'l', 'f', [:integer, :float], :allocated_arrays => %w{x y})}
-  
+
     /* Perform the operation */
     status = yepCore_DotProduct_V64fV64f_S64f(yep_x, yep_y, &dp, (YepSize)l);
     assert(status == YepStatusOk);
 
     #{deinitialize_yeppp}
-  
+
     #{release_array_memory(%w{x y})}
-  
+
     return DBL2NUM((double)dp);
   }
 }.strip
@@ -283,17 +291,17 @@ MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
       #{allocate_yep64_typed_array('x', 'l')}
 
       #{initialize_yeppp}
-  
+
       #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x})}
-  
+
       /* Perform the operation */
       status = yepCore_#{kind}_V64{{type}}_S64{{type}}(yep_x, &#{kind.downcase}, (YepSize)l);
       assert(status == YepStatusOk);
 
       #{deinitialize_yeppp}
-  
+
       #{release_array_memory(%w{x})}
-   
+
       return {{ruby_type}}2NUM(({{c_type}})#{kind.downcase});
     }
   }.strip
@@ -310,7 +318,7 @@ PAIRWISE_MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
       VALUE *y_a;
       long l;
       #{declare_yep64_typed_array(%w{x y})}
-      
+
       #{ensure_array_argument('x', 'first')}
       #{ensure_array_argument('y', 'second')}
 
@@ -318,14 +326,18 @@ PAIRWISE_MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
       y_a = RARRAY_PTR(y);
       l = RARRAY_LEN(x);
 
+      if (l != RARRAY_LEN(y)) {
+        rb_raise(rb_eArgError, "given array arguments have different lengths");
+      }
+
       /* Allocate arrays of inputs and outputs */
       #{allocate_yep64_typed_array(%w{x y}, 'l')}
 
       #{initialize_yeppp}
-  
+
       #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x y})}
       #{load_ruby_array_into_yeppp_array_parameterized('y', 'i', 'l', :allocated_arrays => %w{x y})}
-  
+
       /* Perform the operation */
       status = yepCore_#{kind}_IV64{{type}}V64{{type}}_IV64{{type}}(yep_x, yep_y, (YepSize)l);
       assert(status == YepStatusOk);
@@ -333,9 +345,9 @@ PAIRWISE_MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
       #{load_ruby_array_from_yeppp_array_parameterized('x', 'i', 'l')}
 
       #{deinitialize_yeppp}
-  
+
       #{release_array_memory(%w{x y})}
-   
+
       return new_ary;
     }
   }.strip
@@ -352,7 +364,7 @@ CONSTANT_MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
       long l;
       Yep64f konst;
       #{declare_yep64_typed_array(%w{x})}
-  
+
       #{ensure_array_argument('x', 'first')}
       if (TYPE(c) != T_FIXNUM && TYPE(c) != T_BIGNUM && TYPE(c) != T_FLOAT) {
         rb_raise(rb_eArgError, "second argument was not a number");
@@ -366,9 +378,9 @@ CONSTANT_MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
       #{allocate_yep64_typed_array(%w{x}, 'l')}
 
       #{initialize_yeppp}
-  
+
       #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x})}
-  
+
       /* Perform the operation */
       status = yepCore_#{kind}_IV64{{type}}S64{{type}}_IV64{{type}}(yep_x, konst, (YepSize)l);
       assert(status == YepStatusOk);
@@ -376,9 +388,9 @@ CONSTANT_MIN_MAX = typed_variants(%w{Min Max}.map do |kind|
       #{load_ruby_array_from_yeppp_array_parameterized('x', 'i', 'l')}
 
       #{deinitialize_yeppp}
-  
+
       #{release_array_memory(%w{x})}
-   
+
       return new_ary;
     }
   }.strip
@@ -401,21 +413,21 @@ NEGATE = typed_variants(%{
 
     /* Allocate arrays of inputs and outputs */
     #{allocate_yep64_typed_array(%w{x}, 'l')}
-  
+
     #{initialize_yeppp}
-  
+
     #{load_ruby_array_into_yeppp_array_parameterized('x', 'i', 'l', :allocated_arrays => %w{x})}
-  
+
     /* Perform the negation */
     status = yepCore_Negate_IV64{{type}}_IV64{{type}}(yep_x, (YepSize)l);
     assert(status == YepStatusOk);
-  
+
     #{load_ruby_array_from_yeppp_array_parameterized('x', 'i', 'l')}
-  
+
     #{deinitialize_yeppp}
-  
+
     #{release_array_memory(%w{x})}
-   
+
     return new_ary;
   }
 }).freeze
@@ -447,7 +459,7 @@ SUMS = %w{Sum SumAbs SumSquares}.map do |kind|
       assert(status == YepStatusOk);
 
       #{deinitialize_yeppp}
-    
+
       #{release_array_memory(%w{x})}
 
       return DBL2NUM((double)sum);
@@ -485,7 +497,7 @@ MATHS = MATHS_KINDS.map do |kind|
       #{load_ruby_array_from_yeppp_array('y', 'i', 'l', 'f')}
 
       #{deinitialize_yeppp}
-    
+
       #{release_array_memory(%w{x y})}
 
       return new_ary;
@@ -532,9 +544,9 @@ POLYNOMIAL = %{
     #{load_ruby_array_from_yeppp_array('z', 'i', 'y_l', 'f')}
 
     #{deinitialize_yeppp}
-  
+
     #{release_array_memory(%w{x y z})}
-    
+
     return new_ary;
   }
 }.strip.freeze

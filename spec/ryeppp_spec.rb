@@ -7,10 +7,12 @@ describe Ryeppp do
     expect{Ryeppp.add_v64sv64s_v64s([1, 'a'], [2, 'b'])}.to raise_error(TypeError)
     expect{Ryeppp.add_v64sv64s_v64s([2**63], [1])}.to raise_error(RangeError)
     expect{Ryeppp.add_v64sv64s_v64s([-2**63], [1])}.to raise_error(RangeError)
+    expect{Ryeppp.add_v64sv64s_v64s([1], [2, 3])}.to raise_error(ArgumentError)
   end
   it 'should add vectors of Floats' do
     Ryeppp.add_v64fv64f_v64f([1.1], [1.1]).should eq([2.2])
     expect{Ryeppp.add_v64fv64f_v64f([1.1, 'a'], [2.2, 'b'])}.to raise_error(TypeError)
+    expect{Ryeppp.add_v64fv64f_v64f([1.1], [2.2, 3.3])}.to raise_error(ArgumentError)
   end
 
   # Subtraction
@@ -19,10 +21,12 @@ describe Ryeppp do
     expect{Ryeppp.subtract_v64sv64s_v64s([1, 'a'], [2, 'b'])}.to raise_error(TypeError)
     expect{Ryeppp.subtract_v64sv64s_v64s([2**63], [2])}.to raise_error(RangeError)
     expect{Ryeppp.subtract_v64sv64s_v64s([-2**63], [2])}.to raise_error(RangeError)
+    expect{Ryeppp.subtract_v64sv64s_v64s([1], [2, 3])}.to raise_error(ArgumentError)
   end
   it 'should subtract vectors of Floats' do
     Ryeppp.subtract_v64fv64f_v64f([1.1], [1.1]).should eq([0])
     expect{Ryeppp.subtract_v64fv64f_v64f([1.1, 'a'], [2.2, 'b'])}.to raise_error(TypeError)
+    expect{Ryeppp.subtract_v64fv64f_v64f([1.1], [2.2, 3.3])}.to raise_error(ArgumentError)
   end
 
   # Multiplication
@@ -46,10 +50,12 @@ describe Ryeppp do
     expect{Ryeppp.multiply_v64sv64s_v64s([-2**63], [2])}.to raise_error(RangeError)
     expect{Ryeppp.multiply_v64sv64s_v64s(2, [2])}.to raise_error(ArgumentError)
     expect{Ryeppp.multiply_v64sv64s_v64s([2], 2)}.to raise_error(ArgumentError)
+    expect{Ryeppp.multiply_v64sv64s_v64s([1], [2, 3])}.to raise_error(ArgumentError)
   end
   it 'should multiply vectors of Floats' do
     Ryeppp.multiply_v64fv64f_v64f([2.5], [3.5]).should eq([8.75])
     expect{Ryeppp.multiply_v64fv64f_v64f([1.1, 'a'], [2.2, 'b'])}.to raise_error(TypeError)
+    expect{Ryeppp.multiply_v64fv64f_v64f([1.1], [2.2, 3.3])}.to raise_error(ArgumentError)
   end
 
   # Dot Product
@@ -58,6 +64,7 @@ describe Ryeppp do
     expect{Ryeppp.dotproduct_v64fv64f_s64f([1, 2, 'a'], [4, 5, 'b'])}.to raise_error(TypeError)
     expect{Ryeppp.dotproduct_v64fv64f_s64f(2, [2])}.to raise_error(ArgumentError)
     expect{Ryeppp.dotproduct_v64fv64f_s64f([2], 2)}.to raise_error(ArgumentError)
+    expect{Ryeppp.dotproduct_v64fv64f_s64f([1], [2, 3])}.to raise_error(ArgumentError)
   end
 
   # Minimum
@@ -94,6 +101,7 @@ describe Ryeppp do
     expect{Ryeppp.min_v64fv64f_v64f([1.0, 'a'], [2.0, 'b'])}.to raise_error(TypeError)
     expect{Ryeppp.min_v64fv64f_v64f(1.0, [2.0, 'b'])}.to raise_error(ArgumentError)
     expect{Ryeppp.min_v64fv64f_v64f([1.0], 1)}.to raise_error(ArgumentError)
+    expect{Ryeppp.min_v64fv64f_v64f([1.0], [2.0, 3.0])}.to raise_error(ArgumentError)
   end
   # Pairwise Maxima
   it 'should find the pairwise maxima in vectors of Floats' do
@@ -101,6 +109,7 @@ describe Ryeppp do
     expect{Ryeppp.max_v64fv64f_v64f([1.0, 'a'], [2.0, 'b'])}.to raise_error(TypeError)
     expect{Ryeppp.max_v64fv64f_v64f(1.0, [2.0, 'b'])}.to raise_error(ArgumentError)
     expect{Ryeppp.max_v64fv64f_v64f([1.0, 'a'], 2.0)}.to raise_error(ArgumentError)
+    expect{Ryeppp.max_v64fv64f_v64f([1.0], [2.0, 3.0])}.to raise_error(ArgumentError)
   end
 
   # Constant Minima

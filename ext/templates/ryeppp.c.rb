@@ -1,6 +1,12 @@
 class String
   def pluralize
-    "#{self}#{self.size > 0 && self[-1] == 'e' ? 's' : 'es'}"
+    if self == 'float'
+      'floats'
+    elsif self == 'integer'
+      'integers'
+    else
+      "#{self}#{self.size > 0 && self[-1] == 'e' ? 's' : 'es'}"
+    end
   end
 end
 

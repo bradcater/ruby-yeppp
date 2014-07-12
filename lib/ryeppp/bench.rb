@@ -119,6 +119,9 @@ class Array
 
         long i;
 
+        if (TYPE(b) != T_ARRAY) {
+          rb_raise(rb_eTypeError, "given argument was not an Array");
+        }
         if (n != RARRAY_LEN(b)) {
           rb_raise(rb_eArgError, "mismatched Array sizes");
         }
@@ -137,6 +140,9 @@ class Array
 
         long i;
 
+        if (TYPE(b) != T_ARRAY) {
+          rb_raise(rb_eTypeError, "given argument was not an Array");
+        }
         if (n != RARRAY_LEN(b)) {
           rb_raise(rb_eArgError, "mismatched Array sizes");
         }
@@ -160,8 +166,12 @@ class Array
         VALUE *x_a = RARRAY_PTR(self);
         double konst = NUM2DBL(c);
         VALUE new_ary = rb_ary_new2(n);
-
         long i;
+
+        if (TYPE(c) != T_FIXNUM && TYPE(c) != T_BIGNUM && TYPE(c) != T_FLOAT) {
+          rb_raise(rb_eTypeError, "given argument was not an integer or a float");
+        }
+
         for (i=0; i<n; i++) {
           rb_ary_push(new_ary, (NUM2DBL(x_a[i]) < konst) ? x_a[i] : c);
         }
@@ -174,8 +184,12 @@ class Array
         VALUE *x_a = RARRAY_PTR(self);
         double konst = NUM2DBL(c);
         VALUE new_ary = rb_ary_new2(n);
-
         long i;
+
+        if (TYPE(c) != T_FIXNUM && TYPE(c) != T_BIGNUM && TYPE(c) != T_FLOAT) {
+          rb_raise(rb_eTypeError, "given argument was not an integer or a float");
+        }
+
         for (i=0; i<n; i++) {
           rb_ary_push(new_ary, (NUM2DBL(x_a[i]) > konst) ? x_a[i] : c);
         }
@@ -222,7 +236,7 @@ class Array
 
         long i;
         for (i=0; i<n; i++) {
-          rb_ary_push(new_ary, DBL2NUM(pow(2.717, NUM2DBL(x_a[i]))));
+          rb_ary_push(new_ary, DBL2NUM(pow(M_E, NUM2DBL(x_a[i]))));
         }
         return new_ary;
       }

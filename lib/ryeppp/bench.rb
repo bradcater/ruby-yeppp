@@ -126,6 +126,12 @@ class Array
           rb_raise(rb_eArgError, "mismatched Array sizes");
         }
         for (i=0; i<n; i++) {
+          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
+            rb_raise(rb_eTypeError, "input was not all integers and floats");
+          }
+          if (TYPE(x_b[i]) != T_FIXNUM && TYPE(x_b[i]) != T_BIGNUM && TYPE(x_b[i]) != T_FLOAT) {
+            rb_raise(rb_eTypeError, "input was not all integers and floats");
+          }
           rb_ary_push(new_ary, (NUM2DBL(x_a[i]) < NUM2DBL(x_b[i])) ? x_a[i] : x_b[i]);
         }
         return new_ary;
@@ -147,6 +153,12 @@ class Array
           rb_raise(rb_eArgError, "mismatched Array sizes");
         }
         for (i=0; i<n; i++) {
+          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
+            rb_raise(rb_eTypeError, "input was not all integers and floats");
+          }
+          if (TYPE(x_b[i]) != T_FIXNUM && TYPE(x_b[i]) != T_BIGNUM && TYPE(x_b[i]) != T_FLOAT) {
+            rb_raise(rb_eTypeError, "input was not all integers and floats");
+          }
           rb_ary_push(new_ary, (NUM2DBL(x_a[i]) > NUM2DBL(x_b[i])) ? x_a[i] : x_b[i]);
         }
         return new_ary;
@@ -173,6 +185,9 @@ class Array
         }
 
         for (i=0; i<n; i++) {
+          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
+            rb_raise(rb_eTypeError, "input was not all integers and floats");
+          }
           rb_ary_push(new_ary, (NUM2DBL(x_a[i]) < konst) ? x_a[i] : c);
         }
         return new_ary;
@@ -191,6 +206,9 @@ class Array
         }
 
         for (i=0; i<n; i++) {
+          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
+            rb_raise(rb_eTypeError, "input was not all integers and floats");
+          }
           rb_ary_push(new_ary, (NUM2DBL(x_a[i]) > konst) ? x_a[i] : c);
         }
         return new_ary;
@@ -223,6 +241,9 @@ class Array
 
         long i;
         for (i=0; i<n; i++) {
+          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
+            rb_raise(rb_eTypeError, "input was not all integers and floats");
+          }
           rb_ary_push(new_ary, DBL2NUM(log(NUM2DBL(x_a[i]))));
         }
         return new_ary;
@@ -236,6 +257,9 @@ class Array
 
         long i;
         for (i=0; i<n; i++) {
+          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
+            rb_raise(rb_eTypeError, "input was not all integers and floats");
+          }
           rb_ary_push(new_ary, DBL2NUM(pow(M_E, NUM2DBL(x_a[i]))));
         }
         return new_ary;
@@ -249,6 +273,9 @@ class Array
 
         long i;
         for (i=0; i<n; i++) {
+          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
+            rb_raise(rb_eTypeError, "input was not all integers and floats");
+          }
           rb_ary_push(new_ary, DBL2NUM(sin(NUM2DBL(x_a[i]))));
         }
         return new_ary;
@@ -262,6 +289,9 @@ class Array
 
         long i;
         for (i=0; i<n; i++) {
+          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
+            rb_raise(rb_eTypeError, "input was not all integers and floats");
+          }
           rb_ary_push(new_ary, DBL2NUM(cos(NUM2DBL(x_a[i]))));
         }
         return new_ary;
@@ -275,6 +305,9 @@ class Array
 
         long i;
         for (i=0; i<n; i++) {
+          if (TYPE(x_a[i]) != T_FIXNUM && TYPE(x_a[i]) != T_BIGNUM && TYPE(x_a[i]) != T_FLOAT) {
+            rb_raise(rb_eTypeError, "input was not all integers and floats");
+          }
           rb_ary_push(new_ary, DBL2NUM(tan(NUM2DBL(x_a[i]))));
         }
         return new_ary;

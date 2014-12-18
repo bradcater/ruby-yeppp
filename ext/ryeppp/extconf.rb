@@ -19,5 +19,5 @@ dir_config('yeppp-1.0.0',
 if have_library('yeppp')
   create_makefile(extension_name)
 else
-  puts 'No yeppp! support available.'
+  puts 'No Yeppp! support available.'
 end
